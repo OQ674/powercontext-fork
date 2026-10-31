@@ -117,6 +117,7 @@ class ArtifactProcessingBinding:
     # Only automatic admission is filtered; already accepted requests retain
     # their own Worker authorization and domain completion semantics.
     automatic_scope_filter: Callable[[AsyncConnection, tuple[str, ...]], Awaitable[frozenset[str]]] | None = None
+    automatic_count_filter: Callable[[AsyncConnection, tuple[str, ...]], Awaitable[frozenset[str]]] | None = None
 
     def __post_init__(self) -> None:
         if not self.binding_name or self.binding_name != self.binding_name.strip():
@@ -402,6 +403,8 @@ class _FamilyState:
     next_schedule_at: float | None = None
     next_discovery_at: float = 0.0
     automatic_next: bool = False
+    count_after: int = 0
+    next_count_scan_at: float = 0.0
     overflow_not_before: float = 0.0
     degraded: bool = False
     completed: int = 0
@@ -514,6 +517,7 @@ class ArtifactProcessingSupervisor:
         for name, state in self._families.items():
             if binding_name is None or binding_name == name:
                 state.discovery_pending = True
+                state.next_count_scan_at = 0.0
         self._wake.set()
 
     async def close(self) -> None:
@@ -656,6 +660,46 @@ class ArtifactProcessingSupervisor:
         else:
             await self._discover_requested(state)
             await self._discover_automatic(state)
+        await self._discover_count(state)
+
+    async def _discover_count(self, state: _FamilyState) -> None:
+        """Accept bounded count-ready work independently of the time checkpoint."""
+        binding = state.binding
+        capacity = self._fresh_capacity(state)
+        loop = asyncio.get_running_loop()
+        if binding.automatic_count_filter is None or capacity <= 0 or loop.time() < state.next_count_scan_at:
+            return
+        page_size = min(capacity, _DISCOVERY_PAGE_SIZE)
+        admitted: list[str] = []
+        async with self._database.transaction() as connection:
+            await self._leases.require_fence(connection, self._require_current_fence())
+            rows = await self._intents.scan(
+                connection, binding.binding_name, after_sequence=state.count_after, limit=page_size, dirty_only=True
+            )
+            candidates = tuple(
+                row.scope_id
+                for row in rows
+                if row.scope_id not in state.queued
+                and row.scope_id not in state.running
+                and row.scope_id not in state.retries
+                and row.requested_generation == row.handled_generation
+            )
+            eligible = await binding.automatic_count_filter(connection, candidates)
+            if eligible and binding.automatic_scope_filter is not None:
+                eligible &= await binding.automatic_scope_filter(connection, tuple(eligible))
+            for scope in candidates:
+                if scope not in eligible:
+                    continue
+                current = await self._intents.load(connection, scope, binding.binding_name, for_update=True)
+                if current is not None and current.requested_generation == current.handled_generation:
+                    await self._intents.request(connection, scope, binding.binding_name)
+                    admitted.append(scope)
+        # Cursor and enqueue publication follow the durable transaction commit.
+        full_page = len(rows) == page_size
+        state.count_after = rows[-1].pending_sequence if full_page else 0
+        state.next_count_scan_at = loop.time() + (_DISCOVERY_PAGE_DELAY_SECONDS if full_page else 1.0)
+        for scope in admitted:
+            self._enqueue(state, scope)
 
     async def _discover_requested(self, state: _FamilyState) -> None:
         capacity = self._fresh_capacity(state)
@@ -1058,6 +1102,8 @@ class ArtifactProcessingSupervisor:
             state.overflow_not_before = 0.0
             state.retries.clear()
             state.requested_after = state.scan_after = state.scan_generation = 0
+            state.count_after = 0
+            state.next_count_scan_at = 0.0
             state.scan_in_progress = False
             state.discovery_pending = True
 
@@ -1093,6 +1139,10 @@ class ArtifactProcessingSupervisor:
                 continue
             if state.next_schedule_at is not None:
                 deadlines.append(state.next_schedule_at)
+            if state.binding.automatic_count_filter is not None:
+                # Some server-owned lineage writes have no API wake signal.
+                # Poll bounded metadata pages so those identities also admit work.
+                deadlines.append(max(state.next_count_scan_at, state.next_discovery_at))
             if state.discovery_pending or state.scan_in_progress or not state.reconcile_complete or state.degraded:
                 deadlines.append(max(now, state.next_discovery_at))
         return None if not deadlines else max(0.001, min(deadlines) - now)
