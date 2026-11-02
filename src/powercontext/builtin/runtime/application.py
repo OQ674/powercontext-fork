@@ -844,7 +844,12 @@ class ScopedContextApplication:
         ):
             raise InvalidRuntimeRequestError("context-assembly-entry-limit")
         async with self._runtime._scope_operation(self.scope_id) as scope:
-            if request.assembly is not None and not request.assembly.sections and not request.include_code:
+            if (
+                request.assembly is not None
+                and not request.assembly.sections
+                and not request.include_code
+                and not request.evidence_selection
+            ):
                 return PreparedContextBuilder().empty()
             if authorize_scopes is not None:
                 await authorize_scopes((self.scope_id, *scope.context_references))
@@ -931,6 +936,8 @@ class ScopedContextApplication:
             if request.assembly is not None
             else {MEMORY_FAMILY, EXPERIENCE_FAMILY, TOPIC_MEMORY_FAMILY}
         )
+        if request.evidence_selection:
+            families = {MEMORY_FAMILY}
         # Caller-owned cache of the query vectors round 0 already paid for, keyed by scope.
         # Expansion rounds read it so a repeat search does not re-embed; round 0 fills it.
         reuse: dict[str, MemoryQueryEmbedding] = {}
@@ -979,7 +986,7 @@ class ScopedContextApplication:
                 topic_reuse=topic_reuse,
                 round_zero=round_zero,
             )
-        code = await self._code_candidates(request) if request.include_code else ()
+        code = await self._code_candidates(request) if request.include_code and not request.evidence_selection else ()
         with self._runtime._stage(
             "context.build",
             attributes={
