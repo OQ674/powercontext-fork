@@ -170,9 +170,19 @@ class _Concept:
 # General accounting concepts, not company names, question IDs or evidence pages.
 _CONCEPTS = (
     _Concept(
-        ("income statement", "income statements", "p&l", "ebitda", "profit margin", "operating income"),
+        (
+            "income statement",
+            "income statements",
+            "p&l",
+            "ebitda",
+            "profit margin",
+            "operating margin",
+            "gross margin",
+            "gross profit",
+            "operating income",
+        ),
         ("operating income", "net income", "income from operations", "operating profit"),
-        r"\b(?:consolidated )?statement\w* (?:of )?(?:income|operation|earning)\b",
+        r"\b(?:consolidated )?statements? (?:of )?(?:income|operations?|earnings?)\b",
         True,
     ),
     _Concept(
@@ -188,7 +198,7 @@ _CONCEPTS = (
     _Concept(
         ("balance sheet", "balance sheets", "current ratio", "quick ratio", "working capital", "assets", "equity"),
         ("total assets", "current assets", "current liabilities", "shareholders equity", "stockholders equity"),
-        r"\b(?:balance sheet|statement\w* (?:of )?financial position)\b",
+        r"\b(?:balance sheets?|statements? (?:of )?financial position)\b",
         True,
     ),
     _Concept(
@@ -201,19 +211,63 @@ _CONCEPTS = (
     ),
     _Concept(
         ("geograph", "countries", "regions", "primarily operates", "segments"),
-        ("geographic", "business segments", "international", "countries", "regions"),
-        r"\b(?:our business|business overview|division|segment|geographic)",
+        (
+            "geographic",
+            "business segments",
+            "operating segments",
+            "division",
+            "international",
+            "countries",
+            "regions",
+            "north america",
+            "latin america",
+            "europe",
+            "africa",
+            "middle east",
+            "asia pacific",
+        ),
+        r"\b(?:item 1 business|business overview|operating segments?|geographic (?:areas?|markets?|regions?))\b",
     ),
     _Concept(("restructur", "impairment"), ("restructuring", "productivity", "impairment", "reorganization")),
     _Concept(
         ("debt", "borrowing", "leverage", "interest coverage"), ("long term debt", "borrowings", "interest expense")
     ),
-    _Concept(("tax",), ("income taxes", "effective tax rate", "deferred tax")),
+    _Concept(
+        ("tax",),
+        ("income taxes", "income tax provision", "effective tax rate", "deferred tax"),
+        r"\b(?:income tax(?:es| provision)?|effective tax rate)\b",
+        True,
+    ),
     _Concept(("dividend", "buyback", "repurchase"), ("dividends", "share repurchases", "treasury stock")),
     _Concept(("pension", "retirement"), ("pension benefits", "retirement", "benefit obligation")),
     _Concept(("acquisition", "goodwill"), ("acquisitions", "goodwill", "purchase price")),
     _Concept(("lease",), ("operating leases", "finance leases", "lease obligations")),
     _Concept(("inventory", "inventories"), ("inventories", "inventory")),
+    _Concept(
+        ("customer concentration", "customer retention", "retain", "card member", "primary customers"),
+        (
+            "customer concentration",
+            "one customer accounted",
+            "sales to this customer",
+            "major customers",
+            "customer retention",
+            "customer relationships",
+            "card members",
+            "new card acquisitions",
+            "deeper relationships",
+            "new customers",
+            "customer demand",
+            "commercial customers",
+            "airline customers",
+            "government contracts",
+            "government customers",
+            "sales to the government",
+        ),
+    ),
+    _Concept(
+        ("cyclicality", "cyclical", "business cycle"),
+        ("cyclical", "business cycles", "economic conditions", "economic downturn"),
+    ),
 )
 
 
@@ -256,7 +310,7 @@ class _Page:
     tokens: tuple[str, ...]
     counts: Counter[str]
     body: str
-    coverage: tuple[bool, ...] = ()
+    coverage: tuple[float, ...] = ()
     affinity: float = 0.0
     score: float = 0.0
 
@@ -276,7 +330,18 @@ def _affinity(identifier: str, query: _Query) -> float:
     prefix = re.split(r"(?:19|20)\d{2}", identifier, maxsplit=1)[0]
     company = tuple(term for term in _tokens(prefix) if term not in _ID_STOP)
     compact = "".join(company)
-    if len(compact) >= 2 and compact in query.text.replace(" ", ""):
+    query_compact = query.text.replace(" ", "")
+    if len(compact) >= 2 and compact in query_compact:
+        return 1.0
+    # Common two-word company shorthands concatenate the first syllables
+    # (for example, the first two letters of each word). Identifiers often
+    # arrive without word boundaries, so recognize that conservative shape
+    # without maintaining a company-specific alias table.
+    if any(
+        len(term) >= 4 and compact.startswith(term[:2]) and term[2:] in compact[2:]
+        for term in query.literal
+        if term.isalpha()
+    ):
         return 1.0
     meaningful = tuple(term for term in company if len(term) > 1 and not term.isdigit())
     return sum(term in query.literal for term in meaningful) / len(meaningful) if meaningful else 0.0
@@ -291,18 +356,31 @@ def _bm25(counts: Counter[str], weights: dict[str, float], idf: dict[str, float]
     )
 
 
-def _headings(page: _Page, query: _Query) -> tuple[float, tuple[bool, ...]]:
-    beginning = page.body[:1000]
-    contents = bool(re.search(r"\btable of content\b", beginning))
+def _looks_like_index(text: str) -> bool:
+    """Distinguish an actual index from the repeated ``Table of Contents`` running header."""
+    numbered_sections = len(re.findall(r"\b(?:item|note)\s+\d+[a-z]?\b", text))
+    return numbered_sections >= 5 or (" our financial result " in text and " note 1 " in text and " note 5 " in text)
+
+
+def _headings(page: _Page, query: _Query) -> tuple[float, tuple[float, ...]]:
+    # A statement title is useful only when it is genuinely at the start of a
+    # page. Audit opinions and exhibit indexes often repeat every statement
+    # name later in their first paragraphs and otherwise crowd out the actual
+    # statement pages.
+    beginning = page.body[:120]
+    index_page = _looks_like_index(page.body[:1800])
     numeric = sum(count for term, count in page.counts.items() if term.isdigit())
-    coverage: list[bool] = []
+    coverage: list[float] = []
     score = 0.0
     for concept in query.concepts:
         heading = bool(concept.heading and re.search(concept.heading, beginning))
-        primary = heading and not contents and (not concept.table or numeric >= 6)
+        primary = heading and not index_page and (not concept.table or numeric >= 6)
         phrases = sum(f" {_phrase(alternative)} " in page.body for alternative in concept.alternatives)
-        coverage.append(primary or (not concept.table and phrases > 0))
-        score += 4.0 * primary + min(phrases, 3) * 0.5
+        strength = 12.0 if primary else min(phrases, 4) * 1.0
+        coverage.append(strength)
+        score += strength
+    if index_page:
+        score *= 0.1
     return score, tuple(coverage)
 
 
@@ -343,25 +421,34 @@ def _rank(pages: list[_Page], query: _Query, native: dict[tuple[str, str], int],
 
 
 def _cover_concepts(ordered: list[_Page], count: int, affinity: float, limit: int) -> list[_Page]:
-    selected = ordered[:limit]
-    reserved: set[str] = set()
+    if count == 0:
+        return ordered[:limit]
+    selected: list[_Page] = []
+    selected_ids: set[str] = set()
+    # Reserve a small evidence budget for each requested concept. Financial
+    # questions often cite several equally plausible disclosure and statement
+    # pages, so two reservations are not enough for a top-20 contract.
+    per_concept = min(6, max(1, limit // max(2 * count, 1)))
     for index in range(count):
-        available = [page for page in ordered if page.coverage[index] and (affinity < 1 or page.affinity == 1)]
-        for candidate in available[: min(2, limit // max(2 * count, 1))]:
-            if candidate.source_id in {page.source_id for page in selected}:
-                reserved.add(candidate.source_id)
+        available = sorted(
+            (page for page in ordered if page.coverage[index] > 0 and (affinity < 1 or page.affinity == 1)),
+            key=lambda page: (-page.coverage[index], -page.score, page.source_id),
+        )
+        added = 0
+        for candidate in available:
+            if candidate.source_id in selected_ids:
                 continue
-            replace = next(
-                (
-                    position
-                    for position in range(len(selected) - 1, -1, -1)
-                    if selected[position].source_id not in reserved
-                ),
-                None,
-            )
-            if replace is not None:
-                selected[replace] = candidate
-                reserved.add(candidate.source_id)
+            selected.append(candidate)
+            selected_ids.add(candidate.source_id)
+            added += 1
+            if added == per_concept or len(selected) == limit:
+                break
+    for candidate in ordered:
+        if len(selected) == limit:
+            break
+        if candidate.source_id not in selected_ids:
+            selected.append(candidate)
+            selected_ids.add(candidate.source_id)
     return sorted(selected, key=lambda page: (-page.score, page.source_id))
 
 

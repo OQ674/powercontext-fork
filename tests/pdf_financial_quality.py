@@ -92,13 +92,13 @@ def reports(split: str) -> tuple[tuple[Report, ...], tuple[Question, ...]]:
     questions = []
     for company, identifier in companies:
         pages = [
-            f"{company} Annual Review\nSupplemental operating disclosures section {page}.\n"
+            f"Table of Contents\n{company} Annual Review\nSupplemental operating disclosures section {page}.\n"
             f"Historical revenue and income appear in discussion. Contract {page + 1000}. "
             "Product statistics, regulatory background and compensation policy are provided here."
             for page in range(1, 65)
         ]
         for location, statement in zip(locations, statements, strict=True):
-            pages[location - 1] = company + "\n" + statement
+            pages[location - 1] = "Table of Contents\n" + company + "\n" + statement
         result.append(Report(identifier, tuple(pages)))
         questions.extend(
             Question(prompt.format(company=company), tuple((identifier, locations[index]) for index in expected))
