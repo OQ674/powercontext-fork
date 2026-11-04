@@ -12,34 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Real scoped retrieval, financial query expansion and durable PDF citations."""
+"""Real ingestion, retries, revisions and separately scored report collections."""
 
 from __future__ import annotations
 
-from pathlib import Path
+import io
+import json
+import re
+import socket
+from collections import Counter
+from unittest.mock import AsyncMock
 
 import pytest
+import pytest_asyncio
+from pypdf import PdfReader
 
-from powercontext.builtin.artifacts.memory import MemoryEntryInput
-from powercontext.builtin.artifacts.memory.models import MemoryCitation
-from powercontext.builtin.artifacts.memory.protocols import MemoryCandidateRequest
+from powercontext.builtin.persistence.memory import RelationalMemoryBackend
 from powercontext.builtin.persistence.sqlite import SQLiteConfig
 from powercontext.builtin.runtime import (
     BuiltinConfig,
     GetMemoryEntryRequest,
-    ScopedMemoryApplication,
+    MemoryEntryInput,
+    RememberMemoryRequest,
     SubmitSourceObservation,
-    open_builtin_contexts,
     open_builtin_runtime,
 )
 from powercontext.builtin.scope import ScopeDraft
-from powercontext.sources import (
-    SourceDefinitionRegistry,
-    SourceObservation,
-    TextEvidence,
-    manifest_for_definition,
-    project_source_for_transport,
-)
+from powercontext.sources import SourceDefinitionRegistry, manifest_for_definition, project_source_for_transport
 from powercontext.sources.pdf_pages import (
     PDF_PAGE_SOURCE_DEFINITION,
     PDFDocumentInput,
@@ -47,139 +46,153 @@ from powercontext.sources.pdf_pages import (
     search_pdf_pages,
 )
 from powercontext.sources.projections import TEXT_EVIDENCE_PROJECTION_KEY
-from tests.test_pdf_pages import make_pdf
+from tests.pdf_financial_quality import PagePipeline, reports
+from tests.test_pdf_pages import pdf_bytes
 
 
-class PagePipeline:
-    async def extract(self, request: MemoryCandidateRequest, /) -> tuple[MemoryEntryInput, ...]:
-        entries = []
-        for source in request.sources:
-            assert isinstance(source, SourceObservation)
-            evidence = TextEvidence.model_validate(source.projection(TEXT_EVIDENCE_PROJECTION_KEY))
-            entries.append(MemoryEntryInput(kind="pdf-page", text=evidence.content, sources=(source,)))
-            if evidence.metadata["page_number"] == 2:
-                entries.append(MemoryEntryInput(kind="same-page-copy", text=evidence.content, sources=(source,)))
-        return tuple(entries)
+@pytest_asyncio.fixture(autouse=True)
+async def offline_evidence_checks(monkeypatch):
+    """Build the event loop first, then reject all outbound connections."""
+
+    def deny_network(*args, **kwargs):
+        raise AssertionError("PDF ingestion and retrieval must remain offline")  # noqa: TRY003
+
+    with monkeypatch.context() as patch:
+        patch.setattr(socket.socket, "connect", deny_network)
+        patch.setattr(socket, "create_connection", deny_network)
+        yield
 
 
-async def locations_for(
-    memory: ScopedMemoryApplication,
-    observations: dict[str, SourceObservation],
-    question: str,
-    expected_document: str,
-) -> set[int]:
-    locations: set[int] = set()
-    identities = set()
-    for citation in await search_pdf_pages(memory, question, limit=3):
-        entry = (await memory.get(GetMemoryEntryRequest(citation=citation))).entry
-        source = observations[entry.sources[0].source_id]
-        evidence = TextEvidence.model_validate(source.projection(TEXT_EVIDENCE_PROJECTION_KEY))
-        assert evidence.metadata["document_id"] == expected_document
-        assert source.name not in identities
-        identities.add(source.name)
-        physical_page = evidence.metadata["page_number"]
-        assert isinstance(physical_page, int)
-        locations.add(physical_page)
-    return locations
+async def _submit(runtime, scope_id, raw, identifier):
+    registry = SourceDefinitionRegistry((PDF_PAGE_SOURCE_DEFINITION,))
+    result = []
+    for page in parse_pdf_document(PDFDocumentInput(document_id=identifier, content=raw)):
+        observation = project_source_for_transport(registry, await registry.resolve(page))
+        await runtime.ingestion.submit(SubmitSourceObservation(scope_id=scope_id, observation=observation))
+        result.append(observation)
+    return result
+
+
+async def _flush(memory):
+    for _ in range(100):
+        if not (await memory.flush()).processed:
+            return
+    raise AssertionError("source processing failed to drain")  # noqa: TRY003
 
 
 @pytest.mark.asyncio
-async def test_distinct_financial_pages_document_scope_and_old_revision_citations(tmp_path: Path) -> None:
-    texts = (
-        "Business and geographic segments\nInternational operations in Europe, Asia and North America.",
-        "Consolidated Statement of Income\nRevenue 1200\nOperating income 80\nNet income 60",
-        "Consolidated Statement of Cash Flows\nDepreciation and amortization 20\nCapital expenditures (10)",
-        "Legal Proceedings\nThe company defends ongoing civil litigation and lawsuits.",
-        "Consolidated Balance Sheets\nCurrent assets 500\nCurrent liabilities 210\nEquity 300",
-        *(
-            f"General annual report discussion {index}\nBusiness developments and cash management."
-            for index in range(30)
-        ),
-    )
-    registry = SourceDefinitionRegistry((PDF_PAGE_SOURCE_DEFINITION,))
-    observations: dict[str, SourceObservation] = {}
-    river_ids = []
-    for document in ("RIVER_2023_10K", "MOUNTAIN_2023_10K", "3M_2023_10K"):
-        document_texts = texts[:5] if document.startswith("3M_") else texts
-        pages = parse_pdf_document(PDFDocumentInput(document_id=document, content=make_pdf(document_texts)))
-        for page in pages:
-            observation = project_source_for_transport(registry, await registry.resolve(page))
-            observations[observation.name] = observation
-            if document == "RIVER_2023_10K":
-                river_ids.append(observation.name)
+async def test_real_retry_scopes_revisions_and_identical_pages(tmp_path, monkeypatch):
     config = BuiltinConfig(database=SQLiteConfig(url=f"sqlite+aiosqlite:///{tmp_path / 'pages.db'}"))
+    old_raw = pdf_bytes(("Revenue 700 cash 200", "Revenue 700 cash 200"), title="old")
+    new_raw = pdf_bytes(("Revenue 700 cash 200", "Revenue 700 cash 200"), title="new metadata")
+    async with open_builtin_runtime(config, candidate_pipeline=PagePipeline()) as runtime:
+        assert runtime.scopes is not None
+        scope = await runtime.scopes.create(ScopeDraft(title="Reports", summary="Reports", idempotency_key="reports"))
+        private = await runtime.scopes.create(ScopeDraft(title="Private", summary="Private", idempotency_key="private"))
+        await runtime.ingestion.register(manifest_for_definition(PDF_PAGE_SOURCE_DEFINITION))
+        observations = await _submit(runtime, scope.scope_id, old_raw, "Example_2024")
+        await runtime.ingestion.submit(SubmitSourceObservation(scope_id=scope.scope_id, observation=observations[0]))
+        memory = runtime.memory.for_scope(scope.scope_id)
+        cursor = await memory.cursor()
+        with monkeypatch.context() as patch:
+            patch.setattr(
+                RelationalMemoryBackend, "_commit", AsyncMock(side_effect=RuntimeError("controlled write failure"))
+            )
+            with pytest.raises(RuntimeError, match="controlled write failure"):
+                await memory.flush()
+        assert await memory.cursor() == cursor
+    async with open_builtin_runtime(config, candidate_pipeline=PagePipeline()) as runtime:
+        memory = runtime.memory.for_scope(scope.scope_id)
+        await _flush(memory)
+        old = await search_pdf_pages(memory, "Example revenue cash", 20)
+        assert len(old) == 2
+        observations += await _submit(runtime, scope.scope_id, new_raw, "Example_2024")
+        secret = await _submit(runtime, private.scope_id, pdf_bytes(("Revenue secret 999",)), "Private_2024")
+        await _flush(memory)
+        await _flush(runtime.memory.for_scope(private.scope_id))
+        await memory.remember(
+            RememberMemoryRequest(entries=(MemoryEntryInput(kind="note", text="Revenue cash 999999"),))
+        )
     async with open_builtin_runtime(config) as runtime:
+        memory = runtime.memory.for_scope(scope.scope_id)
+        found = await search_pdf_pages(memory, "Example revenue cash", 20)
+        repeated = await search_pdf_pages(memory, "Example revenue cash", 20)
+        assert found == repeated and len(found) == 4
+        expected = {observation.name for observation in observations}
+        actual = set()
+        for citation in found:
+            record = await memory.get(GetMemoryEntryRequest(citation=citation))
+            assert record.entry.text == "Example_2024\nRevenue 700 cash 200"
+            actual.add(record.entry.sources[0].source_id)
+        assert actual == expected
+        for citation in old:
+            assert (await memory.get(GetMemoryEntryRequest(citation=citation))).entry.sources[0].source_id in expected
+        assert len(await search_pdf_pages(memory, "revenue", 1)) == 1
+        assert await search_pdf_pages(memory, "revenue", 0) == ()
+        assert await search_pdf_pages(memory, "", 20) == ()
+        assert await search_pdf_pages(memory, "zzqvnonexistent", 20) == ()
+        private_memory = runtime.memory.for_scope(private.scope_id)
+        private_hits = await search_pdf_pages(private_memory, "revenue", 20)
+        assert len(private_hits) == 1
+        record = await private_memory.get(GetMemoryEntryRequest(citation=private_hits[0]))
+        assert record.entry.sources[0].source_id == secret[0].name
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("split", ["development", "held_out"])
+async def test_independent_financial_recall_and_full_page_fidelity(tmp_path, split):
+    documents, questions = reports(split)
+    config = BuiltinConfig(database=SQLiteConfig(url=f"sqlite+aiosqlite:///{tmp_path / 'financial.db'}"))
+    locations = {}
+    async with open_builtin_runtime(config, candidate_pipeline=PagePipeline()) as runtime:
         assert runtime.scopes is not None
         scope = await runtime.scopes.create(
-            ScopeDraft(title="Reports", summary="PDF evidence", idempotency_key="reports")
-        )
-        other = await runtime.scopes.create(
-            ScopeDraft(title="Other", summary="Scope isolation", idempotency_key="other")
+            ScopeDraft(title="Financial", summary="Financial", idempotency_key="financial")
         )
         await runtime.ingestion.register(manifest_for_definition(PDF_PAGE_SOURCE_DEFINITION))
-        for observation in observations.values():
-            await runtime.ingestion.submit(SubmitSourceObservation(scope_id=scope.scope_id, observation=observation))
-        # Repeating a page must not create another canonical Source.
-        await runtime.ingestion.submit(
-            SubmitSourceObservation(scope_id=scope.scope_id, observation=observations[river_ids[0]])
-        )
-
-    selected: MemoryCitation | None = None
-    async with open_builtin_runtime(config, candidate_pipeline=PagePipeline()) as runtime:
+        for document in documents:
+            raw = pdf_bytes(document.pages)
+            expected = [page.extract_text(extraction_mode="plain") or "" for page in PdfReader(io.BytesIO(raw)).pages]
+            parsed = parse_pdf_document(PDFDocumentInput(document_id=document.identifier, content=raw))
+            for page, original in zip(parsed, expected, strict=True):
+                tokens = lambda text: Counter(re.findall(r"[a-z]+|\d+", text.casefold()))
+                assert tokens(page.text) == tokens(original)
+            observations = await _submit(runtime, scope.scope_id, raw, document.identifier)
+            for observation in observations:
+                metadata = observation.projection(TEXT_EVIDENCE_PROJECTION_KEY)["metadata"]
+                locations[observation.name] = (metadata["document_id"], metadata["page_number"])
+        await _flush(runtime.memory.for_scope(scope.scope_id))
+    results = []
+    found_count, expected_count = 0, 0
+    async with open_builtin_runtime(config) as runtime:
         memory = runtime.memory.for_scope(scope.scope_id)
-        assert (await memory.flush()).source_count == len(observations)
-        # The pipeline's two Memory entries for page 2 must yield one page citation.
-        question = "What is River's EBITDA less capex in FY2023 using the income statement and cash flow statement?"
-        citations = await search_pdf_pages(memory, question, limit=5)
-        assert 2 <= len(citations) <= 5
-        locations = set()
-        identities = set()
-        for citation in citations:
-            entry = (await memory.get(GetMemoryEntryRequest(citation=citation))).entry
-            source = observations[entry.sources[0].source_id]
-            page = TextEvidence.model_validate(source.projection(TEXT_EVIDENCE_PROJECTION_KEY))
-            assert page.metadata["document_id"] == "RIVER_2023_10K"
-            assert source.name not in identities
-            identities.add(source.name)
-            locations.add(page.metadata["page_number"])
-            if page.metadata["page_number"] == 2:
-                selected = citation
-        assert {2, 3}.issubset(locations) and selected is not None
-        assert {2, 3}.issubset(
-            await locations_for(memory, observations, "What is 3M's EBITDA less capex in FY2023?", "3M_2023_10K")
-        )
-        for question, physical_page in [
-            ("Which regions does River operate in?", 1),
-            ("Has River reported legal battles?", 4),
-            ("What are River's current assets and liabilities?", 5),
-        ]:
-            assert physical_page in await locations_for(memory, observations, question, "RIVER_2023_10K")
-        assert await search_pdf_pages(runtime.memory.for_scope(other.scope_id), question, limit=3) == ()
-        assert await search_pdf_pages(memory, "", limit=0) == ()
-        with pytest.raises(ValueError):
-            await search_pdf_pages(memory, "question", limit=-1)
-        with pytest.raises(ValueError):
-            await search_pdf_pages(memory, "  ")
-        assert len(await search_pdf_pages(memory, "River operating income", limit=1)) == 1
-
-    # A replacement PDF creates new page sources; an old exact citation must
-    # still return the original file digest and physical page after restart.
-    updated_pdf = make_pdf((texts[0], texts[1].replace("80", "90")), title="revised")
-    updated = parse_pdf_document(PDFDocumentInput(document_id="RIVER_2023_10K", content=updated_pdf))
-    async with open_builtin_runtime(config, candidate_pipeline=PagePipeline()) as runtime:
-        for page in updated:
-            observation = project_source_for_transport(registry, await registry.resolve(page))
-            await runtime.ingestion.submit(SubmitSourceObservation(scope_id=scope.scope_id, observation=observation))
-        memory = runtime.memory.for_scope(scope.scope_id)
-        assert (await memory.flush()).source_count == 2
-        old = (await memory.get(GetMemoryEntryRequest(citation=selected))).entry
-        assert old.sources[0].source_id == river_ids[1] and "income 80" in old.text
-    async with open_builtin_contexts(config) as contexts:
-        context = await contexts.get(scope.scope_id)
-        entries = await context.sources.journal.entries()
-        assert len(entries) == len(observations) + 2
-        source = await context.sources.get(observations[river_ids[1]])
-        assert isinstance(source, SourceObservation)
-        evidence = TextEvidence.model_validate(source.projection(TEXT_EVIDENCE_PROJECTION_KEY))
-        assert evidence.metadata["page_number"] == 2
-        assert evidence.metadata["document_sha256"] != updated[1].document_sha256
+        for question in questions:
+            citations = await search_pdf_pages(memory, question.text, 20)
+            actual = []
+            for citation in citations:
+                record = await memory.get(GetMemoryEntryRequest(citation=citation))
+                assert len(record.entry.sources) == 1
+                actual.append(locations[record.entry.sources[0].source_id])
+            assert len(actual) == len(set(actual)) <= 20
+            found_count += len(set(actual) & set(question.evidence))
+            expected_count += len(question.evidence)
+            results.append({
+                "question": question.text,
+                "found": len(set(actual) & set(question.evidence)),
+                "expected": len(question.evidence),
+                "ranking": actual,
+                "gold": question.evidence,
+            })
+    recall = found_count / expected_count
+    print(
+        json.dumps({
+            "synthetic": True,
+            "split": split,
+            "documents": len(documents),
+            "pages": len(locations),
+            "recall_at_20": recall,
+            "queries": results,
+        }),
+        flush=True,
+    )
+    assert recall >= 0.95

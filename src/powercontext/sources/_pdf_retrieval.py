@@ -12,46 +12,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Offline financial query expansion and ranking over public Memory results."""
+"""Corpus-wide lexical evidence ranking through public scoped Memory operations."""
 
 from __future__ import annotations
 
 import math
 import re
+import unicodedata
 from collections import Counter
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING
+
+from powercontext.artifacts import MemoryCitation
+from powercontext.builtin.runtime.models import GetMemoryEntryRequest, SearchMemoryRequest
 
 if TYPE_CHECKING:
-    from powercontext.builtin.artifacts.memory.models import MemoryCitation, MemoryHit
-    from powercontext.builtin.runtime.models import (
-        GetMemoryEntryRequest,
-        MemoryEntryRecord,
-        MemorySearchPage,
-        SearchMemoryRequest,
-    )
+    from powercontext.builtin.runtime.application import ScopedMemoryApplication
+    from powercontext.builtin.runtime.models import MemoryEntryRecord
 
-
-class PDFMemory(Protocol):
-    """Only the public operations required to obtain and verify real citations."""
-
-    async def search(self, request: SearchMemoryRequest, /) -> MemorySearchPage: ...
-
-    async def get(self, request: GetMemoryEntryRequest, /) -> MemoryEntryRecord: ...
-
-
-_FUNCTION_WORDS = frozenset([
+_WORD = re.compile(r"[a-z]+|\d+")
+_STOP = frozenset([
     "a",
     "an",
     "the",
     "and",
     "or",
     "of",
-    "in",
     "to",
+    "in",
     "on",
-    "by",
     "at",
+    "for",
+    "from",
+    "with",
+    "by",
     "as",
     "is",
     "are",
@@ -60,57 +54,41 @@ _FUNCTION_WORDS = frozenset([
     "be",
     "been",
     "being",
+    "it",
+    "its",
+    "they",
+    "their",
+    "this",
+    "that",
+    "these",
+    "those",
     "what",
     "which",
-    "who",
     "how",
     "why",
     "when",
     "where",
+    "who",
     "do",
     "does",
     "did",
     "has",
     "have",
     "had",
-    "can",
+    "would",
     "could",
     "should",
-    "would",
+    "can",
     "will",
-    "shall",
-    "it",
-    "its",
-    "they",
-    "their",
-    "them",
-    "this",
-    "that",
-    "these",
-    "those",
-    "for",
-    "from",
-    "with",
-    "into",
-    "during",
-    "between",
-    "through",
-    "according",
-    "about",
-    "any",
-    "using",
-    "use",
-    "given",
-    "give",
-    "provide",
     "please",
+    "provide",
+    "give",
     "answer",
     "respond",
     "response",
     "question",
-    "calculate",
-    "calculation",
-    "define",
+    "according",
+    "based",
     "assuming",
     "assume",
     "perspective",
@@ -121,14 +99,13 @@ _FUNCTION_WORDS = frozenset([
     "shown",
     "within",
     "relying",
-    "based",
-    "state",
-    "directly",
+    "using",
+    "use",
     "explicitly",
     "outlined",
     "reported",
     "report",
-    "reports",
+    "annual",
     "fiscal",
     "fy",
     "year",
@@ -140,278 +117,367 @@ _FUNCTION_WORDS = frozenset([
     "millions",
     "billion",
     "billions",
-    "quantity",
-    "amount",
-    "unadjusted",
-    "important",
-    "materially",
-    "ongoing",
-    "primarily",
-    "not",
-    "if",
-    "then",
-    "than",
+    "thousand",
+    "thousands",
     "s",
+])
+_ID_STOP = frozenset([
+    "k",
+    "q",
+    "f",
+    "pdf",
+    "inc",
+    "co",
+    "corp",
+    "corporation",
+    "company",
+    "ltd",
+    "limited",
+    "plc",
+    "report",
+    "annual",
+    "financial",
+    "statements",
 ])
 
 
+def _stem(word: str) -> str:
+    if word.endswith("ies") and len(word) > 4:
+        return word[:-3] + "y"
+    if word.endswith("s") and len(word) > 3 and not word.endswith(("ss", "us", "is")):
+        return word[:-1]
+    return word
+
+
+def _tokens(text: str) -> tuple[str, ...]:
+    normalized = unicodedata.normalize("NFKC", text).casefold()
+    normalized = re.sub(r"(?<=[a-z])-\s*\n\s*(?=[a-z])", "", normalized)
+    return tuple(_stem(word) for word in _WORD.findall(normalized))
+
+
+def _phrase(text: str) -> str:
+    return " ".join(_tokens(text))
+
+
 @dataclass(frozen=True)
-class _Facet:
+class _Concept:
     triggers: tuple[str, ...]
-    query: str
+    alternatives: tuple[str, ...]
     heading: str = ""
+    table: bool = False
 
 
-# General financial vocabulary, independent of any document, benchmark or answer.
-_FACETS = (
-    _Facet(
-        ("income", "earnings", "profit", "revenue", "sales", "margin", "ebit", "eps", "p&l", "return on", "coverage"),
-        "consolidated statements income operations earnings revenue sales",
-        r"\bstatements?\s+of\s+(?:income|operations|earnings)\b",
-    ),
-    _Facet(
-        ("cash", "capex", "ebitda", "depreciation", "amortization", "d&a", "capital expenditure"),
-        "consolidated statements cash flows operating activities expenditures",
-        r"\bstatements?\s+of\s+cash\s+flows\b",
-    ),
-    _Facet(
+# General accounting concepts, not company names, question IDs or evidence pages.
+_CONCEPTS = (
+    _Concept(
         (
-            "balance",
-            "assets",
-            "liabilities",
-            "equity",
-            "leverage",
-            "current ratio",
-            "quick ratio",
-            "working capital",
-            "capital employed",
-            "cash conversion",
-            "receivabl",
-            "payabl",
-            "return on",
+            "income statement",
+            "income statements",
+            "p&l",
+            "ebitda",
+            "profit margin",
+            "operating margin",
+            "gross margin",
+            "gross profit",
+            "operating income",
         ),
-        "consolidated balance sheets assets liabilities equity",
-        r"\b(?:balance\s+sheets?|statements?\s+of\s+financial\s+position)\b",
+        ("operating income", "net income", "income from operations", "operating profit"),
+        r"\b(?:consolidated )?statements? (?:of )?(?:income|operations?|earnings?)\b",
+        True,
     ),
-    _Facet(
-        ("geograph", "countries", "regions", "operates", "segments", "markets", "locations", "where"),
-        "geographic segments countries international business operations",
-        r"\b(?:our\s+(?:business|divisions)|business\s+overview|geographic(?:al)?\s+(?:information|areas?|segments?)|business\s+segments?)\b",
+    _Concept(
+        ("cash flow", "cash flows", "ebitda", "depreciation", "amortization", "d&a"),
+        ("cash flows", "operating activities", "depreciation and amortization"),
+        r"\bstatement\w* (?:of )?cash flow\b",
+        True,
     ),
-    _Facet(
-        ("legal", "litigation", "lawsuit", "battles", "contingenc"),
-        "legal proceedings litigation lawsuits commitments contingencies",
-        r"\b(?:legal\s+proceedings|commitments?\s+and\s+contingencies)\b",
+    _Concept(
+        ("capex", "capital expenditure", "free cash flow"),
+        ("capital expenditures", "capital spending", "purchases of property plant equipment", "additions to property"),
     ),
-    _Facet(("restructur", "impairment"), "restructuring impairment charges productivity costs"),
-    _Facet(("debt", "borrow", "interest", "financing"), "debt borrowings notes interest obligations"),
-    _Facet(("dividend", "repurchase", "buyback"), "dividends repurchases treasury shares stock"),
-    _Facet(("pension", "retirement", "benefit"), "pension retirement benefit plans obligations"),
-    _Facet(("tax",), "income taxes effective rate deferred"),
-    _Facet(("acquisition", "acquired", "goodwill", "divest"), "acquisitions divestitures goodwill purchase"),
-    _Facet(("lease",), "leases operating finance obligations"),
-    _Facet(("inventory", "inventories"), "inventories inventory cost accounting"),
-    _Facet(("employee", "workforce", "headcount"), "employees human capital workforce"),
+    _Concept(
+        ("balance sheet", "balance sheets", "current ratio", "quick ratio", "working capital", "assets", "equity"),
+        ("total assets", "current assets", "current liabilities", "shareholders equity", "stockholders equity"),
+        r"\b(?:balance sheets?|statements? (?:of )?financial position)\b",
+        True,
+    ),
+    _Concept(
+        ("revenue", "sales", "margin", "gross profit"), ("net revenue", "net sales", "total revenue", "cost of sales")
+    ),
+    _Concept(
+        ("legal", "litigation", "lawsuit", "battles", "contingencies"),
+        ("legal proceedings", "litigation", "lawsuits", "commitments and contingencies"),
+        r"\b(?:legal proceeding|commitment and contingenc)",
+    ),
+    _Concept(
+        ("geograph", "countries", "regions", "primarily operates", "segments"),
+        (
+            "geographic",
+            "business segments",
+            "operating segments",
+            "division",
+            "international",
+            "countries",
+            "regions",
+            "north america",
+            "latin america",
+            "europe",
+            "africa",
+            "middle east",
+            "asia pacific",
+        ),
+        r"\b(?:item 1 business|business overview|operating segments?|geographic (?:areas?|markets?|regions?))\b",
+    ),
+    _Concept(("restructur", "impairment"), ("restructuring", "productivity", "impairment", "reorganization")),
+    _Concept(
+        ("debt", "borrowing", "leverage", "interest coverage"), ("long term debt", "borrowings", "interest expense")
+    ),
+    _Concept(
+        ("tax",),
+        ("income taxes", "income tax provision", "effective tax rate", "deferred tax"),
+        r"\b(?:income tax(?:es| provision)?|effective tax rate)\b",
+        True,
+    ),
+    _Concept(("dividend", "buyback", "repurchase"), ("dividends", "share repurchases", "treasury stock")),
+    _Concept(("pension", "retirement"), ("pension benefits", "retirement", "benefit obligation")),
+    _Concept(("acquisition", "goodwill"), ("acquisitions", "goodwill", "purchase price")),
+    _Concept(("lease",), ("operating leases", "finance leases", "lease obligations")),
+    _Concept(("inventory", "inventories"), ("inventories", "inventory")),
+    _Concept(
+        ("customer concentration", "customer retention", "retain", "card member", "primary customers"),
+        (
+            "customer concentration",
+            "one customer accounted",
+            "sales to this customer",
+            "major customers",
+            "customer retention",
+            "customer relationships",
+            "card members",
+            "new card acquisitions",
+            "deeper relationships",
+            "new customers",
+            "customer demand",
+            "commercial customers",
+            "airline customers",
+            "government contracts",
+            "government customers",
+            "sales to the government",
+        ),
+    ),
+    _Concept(
+        ("cyclicality", "cyclical", "business cycle"),
+        ("cyclical", "business cycles", "economic conditions", "economic downturn"),
+    ),
 )
 
 
-def _stem(term: str) -> str:
-    for prefix in ("operat", "geograph", "restructur", "depreciat", "amortiz", "amortis"):
-        if term.startswith(prefix):
-            return prefix.replace("amortis", "amortiz")
-    if len(term) > 4 and term.endswith("ies"):
-        return term[:-3] + "y"
-    if len(term) > 4 and term.endswith("s") and not term.endswith(("ss", "us")):
-        return term[:-1]
-    return term
+@dataclass(frozen=True)
+class _Query:
+    literal: dict[str, float]
+    expanded: dict[str, float]
+    phrases: tuple[str, ...]
+    concepts: tuple[_Concept, ...]
+    text: str
 
 
-def _terms(text: str) -> list[str]:
-    return [_stem(term) for term in re.findall(r"[a-z]+|\d+", text.casefold())]
-
-
-def _query_plan(question: str) -> tuple[list[str], tuple[_Facet, ...], tuple[str, ...]]:
-    raw = re.findall(r"[a-z]+|\d+", question.casefold())
-    core = list(dict.fromkeys(term for term in raw if term not in _FUNCTION_WORDS and len(term) > 1))
-    facets = tuple(facet for facet in _FACETS if any(trigger in question.casefold() for trigger in facet.triggers))
-    variants = [" ".join(core[:24]) or question]
-    variants.extend(facet.query for facet in facets)
-    # Short lexical probes avoid imposing the original question's instruction
-    # words as Memory's admission floor, and also find named-company pages.
-    variants.extend(core[:4])
-    years = re.findall(r"(?<!\d)(?:19|20)\d{2}(?!\d)", question)
-    if years:
-        variants.append(" ".join(dict.fromkeys(years)))
-    return core, facets, tuple(dict.fromkeys(variant for variant in variants if variant.strip()))
+def _query(question: str) -> _Query:
+    terms = _tokens(question)
+    literal = {term: 0.2 if term.isdigit() else 1.0 for term in terms if term not in _STOP}
+    lower = question.casefold()
+    concepts = tuple(concept for concept in _CONCEPTS if any(trigger in lower for trigger in concept.triggers))
+    expanded = dict(literal)
+    for concept in concepts:
+        for alternative in concept.alternatives:
+            for term in _tokens(alternative):
+                if term not in _STOP:
+                    expanded.setdefault(term, 0.35)
+    phrases = tuple(
+        dict.fromkeys(
+            " ".join(terms[start : start + width])
+            for width in (2, 3)
+            for start in range(len(terms) - width + 1)
+            if all(term not in _STOP and not term.isdigit() for term in terms[start : start + width])
+        )
+    )
+    return _Query(literal, expanded, phrases, concepts, _phrase(question))
 
 
 @dataclass
-class _Candidate:
-    hit: MemoryHit
-    frequency: Counter[str]
-    fusion: float = 0.0
+class _Page:
+    record: MemoryEntryRecord
+    source_id: str
+    identifier: str
+    tokens: tuple[str, ...]
+    counts: Counter[str]
+    body: str
+    coverage: tuple[float, ...] = ()
+    affinity: float = 0.0
+    score: float = 0.0
 
 
-def _company_match(document_id: str, question: str) -> float:
-    # Keep alphanumeric names (e.g. a digit followed by a letter) intact, while
-    # excluding filing years and generic filename words from company matching.
-    prefix = re.split(r"(?<!\d)(?:19|20)\d{2}(?!\d)", document_id.casefold(), maxsplit=1)[0]
-    terms = [
-        term
-        for term in re.findall(r"[a-z]+|\d+", prefix)
-        if term
-        not in {
-            "k",
-            "q",
-            "f",
-            "pdf",
-            "pdfs",
-            "inc",
-            "corp",
-            "corporation",
-            "company",
-            "co",
-            "ltd",
-            "plc",
-            "report",
-            "reports",
-            "annual",
-            "financial",
-            "statement",
-            "statements",
-        }
-    ]
+def _page(record: MemoryEntryRecord) -> _Page | None:
+    sources = record.entry.sources
+    if len(sources) != 1 or sources[0].source_type != "pdf-page":
+        return None
+    identifier, _, body = record.entry.text.partition("\n")
+    terms = _tokens(body)
     if not terms:
-        return 0.0
-    compact = "".join(terms)
-    if len(compact) < 2:
-        return 0.0
-    if compact in "".join(re.findall(r"[a-z]+|\d+", question.casefold())):
+        return None
+    return _Page(record, sources[0].source_id, identifier, terms, Counter(terms), " " + " ".join(terms) + " ")
+
+
+def _affinity(identifier: str, query: _Query) -> float:
+    prefix = re.split(r"(?:19|20)\d{2}", identifier, maxsplit=1)[0]
+    company = tuple(term for term in _tokens(prefix) if term not in _ID_STOP)
+    compact = "".join(company)
+    query_compact = query.text.replace(" ", "")
+    if len(compact) >= 2 and compact in query_compact:
         return 1.0
-    query_terms = set(re.findall(r"[a-z]+|\d+", question.casefold()))
-    return sum(term in query_terms for term in terms) / len(terms)
+    # Common two-word company shorthands concatenate the first syllables
+    # (for example, the first two letters of each word). Identifiers often
+    # arrive without word boundaries, so recognize that conservative shape
+    # without maintaining a company-specific alias table.
+    if any(
+        len(term) >= 4 and compact.startswith(term[:2]) and term[2:] in compact[2:]
+        for term in query.literal
+        if term.isalpha()
+    ):
+        return 1.0
+    meaningful = tuple(term for term in company if len(term) > 1 and not term.isdigit())
+    return sum(term in query.literal for term in meaningful) / len(meaningful) if meaningful else 0.0
 
 
-def _matching_documents(candidates: list[_Candidate], question: str) -> tuple[str, ...]:
-    matches = {candidate.hit.text.partition("\n")[0]: 0.0 for candidate in candidates}
-    for document in matches:
-        matches[document] = _company_match(document, question)
-    best = max(matches.values(), default=0.0)
-    if best == 0:
-        return ()
-    return tuple(document for document, match in matches.items() if match == best)
-
-
-def _bm25(query: list[str], frequency: Counter[str], idf: dict[str, float], average_length: float) -> float:
-    normalization = 1.2 * (0.25 + 0.75 * frequency.total() / max(average_length, 1.0))
+def _bm25(counts: Counter[str], weights: dict[str, float], idf: dict[str, float], average: float) -> float:
+    norm = 1.2 * (0.6 + 0.4 * counts.total() / max(average, 1.0))
     return sum(
-        idf.get(term, 0.0) * frequency[term] * 2.2 / (frequency[term] + normalization)
-        for term in set(query)
-        if frequency[term]
+        weight * idf.get(term, 0) * min(counts[term], 4) * 2.2 / (min(counts[term], 4) + norm)
+        for term, weight in weights.items()
+        if counts[term]
     )
 
 
-def _heading_bonus(candidate: _Candidate, facet: _Facet) -> float:
-    if not facet.heading:
-        return 0.0
-    text = " ".join(candidate.hit.text.casefold().split())
-    if not re.search(facet.heading, text[:1400]):
-        return 0.0
-    # Full statement tables outrank a contents-page mention of their title.
-    numbers = sum(count for term, count in candidate.frequency.items() if term.isdigit())
-    return 4.0 * (1.0 + min(numbers / 40.0, 1.0))
+def _looks_like_index(text: str) -> bool:
+    """Distinguish an actual index from the repeated ``Table of Contents`` running header."""
+    numbered_sections = len(re.findall(r"\b(?:item|note)\s+\d+[a-z]?\b", text))
+    return numbered_sections >= 5 or (" our financial result " in text and " note 1 " in text and " note 5 " in text)
 
 
-def _rank(
-    candidates: list[_Candidate], question: str, core: list[str], facets: tuple[_Facet, ...], limit: int
-) -> list[_Candidate]:
-    documents = _matching_documents(candidates, question)
-    if documents:
-        candidates = [candidate for candidate in candidates if candidate.hit.text.partition("\n")[0] in documents]
-    if not candidates:
-        return []
-    counts: Counter[str] = Counter(term for candidate in candidates for term in candidate.frequency)
-    total = len(candidates)
-    idf = {term: math.log(1.0 + (total - count + 0.5) / (count + 0.5)) for term, count in counts.items()}
-    average = sum(candidate.frequency.total() for candidate in candidates) / total
-    facet_queries = [_terms(facet.query) for facet in facets]
+def _headings(page: _Page, query: _Query) -> tuple[float, tuple[float, ...]]:
+    # A statement title is useful only when it is genuinely at the start of a
+    # page. Audit opinions and exhibit indexes often repeat every statement
+    # name later in their first paragraphs and otherwise crowd out the actual
+    # statement pages.
+    beginning = page.body[:120]
+    index_page = _looks_like_index(page.body[:1800])
+    numeric = sum(count for term, count in page.counts.items() if term.isdigit())
+    coverage: list[float] = []
+    score = 0.0
+    for concept in query.concepts:
+        heading = bool(concept.heading and re.search(concept.heading, beginning))
+        primary = heading and not index_page and (not concept.table or numeric >= 6)
+        phrases = sum(f" {_phrase(alternative)} " in page.body for alternative in concept.alternatives)
+        strength = 12.0 if primary else min(phrases, 4) * 1.0
+        coverage.append(strength)
+        score += strength
+    if index_page:
+        score *= 0.1
+    return score, tuple(coverage)
 
-    def facet_score(candidate: _Candidate, index: int) -> float:
-        return _bm25(facet_queries[index], candidate.frequency, idf, average) + _heading_bonus(candidate, facets[index])
 
-    def score(candidate: _Candidate) -> float:
-        literal = _bm25([_stem(term) for term in core], candidate.frequency, idf, average)
-        return (
-            literal + 0.45 * sum(facet_score(candidate, index) for index in range(len(facets))) + 20 * candidate.fusion
+def _rank(pages: list[_Page], query: _Query, native: dict[tuple[str, str], int], limit: int) -> list[_Page]:
+    frequencies = Counter(term for page in pages for term in page.counts)
+    idf = {
+        term: math.log1p((len(pages) - frequencies[term] + 0.5) / (frequencies[term] + 0.5)) for term in query.expanded
+    }
+    average = sum(len(page.tokens) for page in pages) / max(1, len(pages))
+    routes: list[list[tuple[float, _Page]]] = [[], [], [], [], []]
+    for page in pages:
+        literal = _bm25(page.counts, query.literal, idf, average)
+        expanded = _bm25(page.counts, query.expanded, idf, average)
+        window = max(
+            (
+                _bm25(Counter(page.tokens[start : start + 96]), query.expanded, idf, 96)
+                for start in range(0, len(page.tokens), 48)
+            ),
+            default=0.0,
         )
-
-    ordered = sorted(candidates, key=lambda candidate: (-score(candidate), candidate.hit.entry_id))
-    # Multi-statement questions need evidence for each requested concept, not
-    # twenty near-duplicates of whichever statement has the most query words.
-    seeds: list[_Candidate] = []
-    per_facet = min(4, limit // max(2 * len(facets), 1))
-    for index in range(len(facets)):
-        ranked = sorted(candidates, key=lambda candidate: (-facet_score(candidate, index), -score(candidate)))
-        seeds.extend(candidate for candidate in ranked[:per_facet] if facet_score(candidate, index) > 0)
-    seen: set[str] = set()
-    result = []
-    for candidate in [*seeds, *ordered]:
-        if candidate.hit.entry_version_id not in seen:
-            seen.add(candidate.hit.entry_version_id)
-            result.append(candidate)
-    return result
-
-
-async def _collect(
-    memory: PDFMemory, query: str, limit: int, candidates: dict[tuple[str, int, str, str], _Candidate]
-) -> None:
-    from powercontext.builtin.runtime.models import SearchMemoryRequest
-
-    page = await memory.search(SearchMemoryRequest(query=query, mode="fts", limit=limit))
-    for rank, hit in enumerate(page.hits, start=1):
-        key = (hit.memory_ref.artifact_id, hit.memory_ref.revision, hit.entry_id, hit.entry_version_id)
-        if key not in candidates:
-            candidates[key] = _Candidate(hit=hit, frequency=Counter(_terms(hit.text)))
-        candidates[key].fusion += 1.0 / (60 + rank)
+        heading, page.coverage = _headings(page, query)
+        proximity = sum(phrase in page.body for phrase in query.phrases)
+        page.affinity = _affinity(page.identifier, query)
+        rank = native.get((page.record.entry.entry_id, page.record.entry.entry_version_id))
+        scores = (literal, expanded, window, heading + proximity, 1.0 / rank if rank else 0.0)
+        for route, score in zip(routes, scores, strict=True):
+            if score > 0:
+                route.append((score, page))
+    for route, weight in zip(routes, (2.0, 1.0, 1.0, 1.0, 0.5), strict=True):
+        for rank, (_, page) in enumerate(sorted(route, key=lambda item: (-item[0], item[1].source_id)), 1):
+            page.score += weight / (60 + rank)
+    best_affinity = max((page.affinity for page in pages), default=0.0)
+    if best_affinity == 1.0:
+        for page in pages:
+            page.score *= 0.35 + 0.65 * page.affinity
+    ordered = sorted((page for page in pages if page.score > 0), key=lambda page: (-page.score, page.source_id))
+    return _cover_concepts(ordered, len(query.concepts), best_affinity, limit)
 
 
-async def search_pages(memory: PDFMemory, question: str, limit: int) -> tuple[MemoryCitation, ...]:
-    """Rank scoped Memory hits, then validate and deduplicate their page sources."""
-
-    from powercontext.builtin.artifacts.memory.models import MemoryCitation
-    from powercontext.builtin.runtime.models import GetMemoryEntryRequest
-
-    if limit < 0:
-        raise ValueError("PDF search limit must not be negative")  # noqa: TRY003
-    if limit == 0:
-        return ()
-    if not question.strip():
-        raise ValueError("PDF search question must not be blank")  # noqa: TRY003
-    core, facets, variants = _query_plan(question)
-    candidates: dict[tuple[str, int, str, str], _Candidate] = {}
-    candidate_limit = max(100, min(600, limit * 20))
-    for query in variants:
-        await _collect(memory, query, candidate_limit, candidates)
-    # Document IDs are discovered from actual Memory text, never from an asset
-    # list. Their exact lexical token also admits sparse statement/table pages
-    # which contain few of the original question's words.
-    for document in _matching_documents(list(candidates.values()), question):
-        await _collect(memory, document, max(256, min(2048, limit * 64)), candidates)
-    ordered = _rank(list(candidates.values()), question, core, facets, limit)
-    citations: list[MemoryCitation] = []
-    seen: set[str] = set()
-    for candidate in ordered:
-        hit = candidate.hit
-        citation = MemoryCitation(
-            memory_ref=hit.memory_ref, entry_id=hit.entry_id, entry_version_id=hit.entry_version_id
+def _cover_concepts(ordered: list[_Page], count: int, affinity: float, limit: int) -> list[_Page]:
+    if count == 0:
+        return ordered[:limit]
+    selected: list[_Page] = []
+    selected_ids: set[str] = set()
+    # Reserve a small evidence budget for each requested concept. Financial
+    # questions often cite several equally plausible disclosure and statement
+    # pages, so two reservations are not enough for a top-20 contract.
+    per_concept = min(6, max(1, limit // max(2 * count, 1)))
+    for index in range(count):
+        available = sorted(
+            (page for page in ordered if page.coverage[index] > 0 and (affinity < 1 or page.affinity == 1)),
+            key=lambda page: (-page.coverage[index], -page.score, page.source_id),
         )
-        entry = (await memory.get(GetMemoryEntryRequest(citation=citation))).entry
-        if len(entry.sources) != 1 or entry.sources[0].source_type != "pdf-page":
-            continue
-        source_id = entry.sources[0].source_id
-        if source_id not in seen:
-            seen.add(source_id)
-            citations.append(citation)
-            if len(citations) == limit:
+        added = 0
+        for candidate in available:
+            if candidate.source_id in selected_ids:
+                continue
+            selected.append(candidate)
+            selected_ids.add(candidate.source_id)
+            added += 1
+            if added == per_concept or len(selected) == limit:
                 break
+    for candidate in ordered:
+        if len(selected) == limit:
+            break
+        if candidate.source_id not in selected_ids:
+            selected.append(candidate)
+            selected_ids.add(candidate.source_id)
+    return sorted(selected, key=lambda page: (-page.score, page.source_id))
+
+
+async def search_pages(memory: ScopedMemoryApplication, question: str, limit: int) -> tuple[MemoryCitation, ...]:
+    if type(limit) is not int:
+        raise TypeError("limit must be an integer")  # noqa: TRY003
+    if limit <= 0 or not question.strip():
+        return ()
+    query = _query(question)
+    if not query.literal:
+        return ()
+    first = await memory.search(SearchMemoryRequest(query=question, mode="fts", limit=max(100, limit * 4)))
+    if first.memory_ref is None:
+        return ()
+    snapshot = await memory.list()
+    pages: dict[str, _Page] = {}
+    for record in snapshot.entries:
+        page = _page(record)
+        if page is not None:
+            pages.setdefault(page.source_id, page)
+    if not pages:
+        return ()
+    native = {(hit.entry_id, hit.entry_version_id): rank for rank, hit in enumerate(first.hits, 1)}
+    selected = _rank(list(pages.values()), query, native, limit)
+    citations = []
+    for page in selected:
+        citation = page.record.citation
+        actual = await memory.get(GetMemoryEntryRequest(citation=citation))
+        if actual.entry != page.record.entry:
+            raise ValueError("PDF evidence did not round-trip through Memory")  # noqa: TRY003
+        citations.append(citation)
     return tuple(citations)
