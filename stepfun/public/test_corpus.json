@@ -1,0 +1,107 @@
+{
+  "dataset_name": "seekdb_edge_ai_benchmark_v1",
+  "documents": [
+    {
+      "id": "doc_001",
+      "title": "OceanBase seekdb 核心架构与定位",
+      "text": "OceanBase seekdb 是一款轻量级、AI 原生的开源融合型数据库。它完美兼容 MySQL 协议，支持嵌入式（Embedded）与独立服务器（Server）双模式部署。seekdb 致力于在一个统一的数据库引擎内，同时高效处理高维向量索引、全文检索、关系标量与半结构化 JSON 数据，避免了传统 Agent 架构在多数据库间拼合产生的数据孤岛与网络延迟。",
+      "category": "seekdb",
+      "tags": ["architecture", "ai-native", "mysql"]
+    },
+    {
+      "id": "doc_002",
+      "title": "seekdb 原生混合检索与 RRF 融合机制",
+      "text": "混合检索（Hybrid Search）是 seekdb 的关键能力，它将向量近似近邻搜索（KNN）与基于关键词的全文检索（Full-Text Match / BM25）在数据库内核层进行联合执行与融合打分。通过互易排序融合（Reciprocal Rank Fusion, RRF）或可配置权重算法，seekdb 能自动规避语义漂移与专有名词遗漏问题，在单条查询中返回兼具深层语义与精确匹配的高质量召回结果。",
+      "category": "seekdb",
+      "tags": ["hybrid-search", "rrf", "ranking"]
+    },
+    {
+      "id": "doc_003",
+      "title": "端侧 AI 推理：Transformers.js 与 ONNX Runtime Web",
+      "text": "端侧 AI 推理是指将深度学习模型直接加载至用户设备（如浏览器端或移动端）执行前向计算。在浏览器中借助 Transformers.js 与 ONNX Runtime Web，可以在完全无需云端推理 API 的前提下，利用本地计算资源完成文本向量化（Embedding）与语义编码，具备极高的用户数据隐私安全、零云端推理成本以及脱机运行能力。",
+      "category": "edge_ai",
+      "tags": ["transformers-js", "onnx", "privacy"]
+    },
+    {
+      "id": "doc_004",
+      "title": "WebGPU 硬件加速与 WASM 自动降级策略",
+      "text": "现代浏览器支持的 WebGPU 标准为端侧 AI 提供了直接访问本地 GPU 算力的高效接口，相比传统 CPU WASM 计算，WebGPU 能使矩阵乘法等密集张量运算吞吐量提升 5 至 10 倍。针对不支持 WebGPU 或显存受限的旧款设备，端侧推理系统应具备自动探测能力，在初始化失败时平滑降级至 WebAssembly (WASM) 后端，确保核心检索链路永不中断。",
+      "category": "edge_ai",
+      "tags": ["webgpu", "wasm", "hardware-acceleration"]
+    },
+    {
+      "id": "doc_005",
+      "title": "端侧模型量化原理：INT8 与 FP16 方案对比",
+      "text": "为了降低端侧模型的内存占用与网络加载耗时，模型量化成为不可或缺的优化手段。INT8 量化方案将 32 位浮点权重压缩为 8 位定点整数，模型体积通常可压缩至原先的 25% 左右（压缩比近 4x），极大提升了加载速度与向量化吞吐率。同时，得益于现代嵌入模型的鲁棒性，INT8 量化后的检索质量（Recall@5 / nDCG@5）衰减通常小于 1.5%，综合效费比极佳。",
+      "category": "quantization",
+      "tags": ["int8", "fp16", "compression"]
+    },
+    {
+      "id": "doc_006",
+      "title": "all-MiniLM-L6-v2 紧凑型向量模型特性",
+      "text": "all-MiniLM-L6-v2 是社区广泛验证的轻量级句子向量模型，输出维度为 384 维。该模型参数量小、计算复杂度低，非常适合在浏览器端由 WebGPU 或 WASM 执行。其 FP32 原始模型约为 90MB，经 INT8 量化后体积降至 23MB 左右，常作为 seekdb-js 官方生态及本地快速向量化测试的标准预设模型。",
+      "category": "models",
+      "tags": ["minilm", "embedding", "384d"]
+    },
+    {
+      "id": "doc_007",
+      "title": "bge-small-zh 中文增强语义检索模型",
+      "text": "BAAI 推出的 BGE-small-zh-v1.5 模型针对中文语义相似度与信息检索进行了深度微调，向量维度为 512 维。在处理中文长句、行业术语及同义词替换时表现优异。在端侧 INT8 量化部署后，其体积约为 25MB，兼具中文语义表征准确度与端侧轻量运行的优势。",
+      "category": "models",
+      "tags": ["bge", "chinese", "512d"]
+    },
+    {
+      "id": "doc_008",
+      "title": "seekdb 增量写入与索引刷新（Refresh Index）机制",
+      "text": "在迷你知识库应用中，文档导入往往呈现出分批次、增量式的操作特点。seekdb 支持动态写入新的文档及向量，并通过显式的索引刷新指令（Index Refresh）将内存缓冲区中的增量数据即时刷入倒排索引与向量索引结构，确保新写入的语料在毫秒级内即可被后续的全文检索与 KNN 向量检索完整召回。",
+      "category": "seekdb",
+      "tags": ["incremental", "index-refresh", "real-time"]
+    },
+    {
+      "id": "doc_009",
+      "title": "PowerContext 智能体记忆基础设施与协同",
+      "text": "PowerContext 是 OceanBase 社区开源的智能体上下文与长期记忆管理基础设施。它能够跨越不同会话、多轮交互以及不同模型之间，持久化工作区文件状态、任务上下文与经验记忆。结合 seekdb 底层的高速向量与混合检索能力，PowerContext 使得 Agent 能够以极低延迟精准命中历史记忆片段，保障长任务的连续性。",
+      "category": "powercontext",
+      "tags": ["memory", "agent", "handoff"]
+    },
+    {
+      "id": "doc_010",
+      "title": "端侧端到端检索延迟拆解与性能调优",
+      "text": "端侧知识库系统的端到端延迟主要包含五大部分：模型文件下载与实例初始化、文档分块批量向量化耗时、seekdb 数据写入与索引刷新延迟、用户查询语句的端侧实时向量化耗时，以及 seekdb 混合检索执行耗时。通过分块批处理（Batching Pipeline）与模型热预热，可显著压低后续查询的端到端时延至 30ms 以内。",
+      "category": "performance",
+      "tags": ["latency", "profiling", "optimization"]
+    }
+  ],
+  "benchmark_queries": [
+    {
+      "query_id": "q01",
+      "query_text": "seekdb 混合检索 RRF 原理是什么？",
+      "expected_doc_ids": ["doc_002", "doc_001"],
+      "focus": "hybrid_search"
+    },
+    {
+      "query_id": "q02",
+      "query_text": "WebGPU 硬件加速与 WASM 降级机制",
+      "expected_doc_ids": ["doc_004", "doc_003"],
+      "focus": "backend_degradation"
+    },
+    {
+      "query_id": "q03",
+      "query_text": "端侧 embedding 模型 INT8 量化与体积压缩比",
+      "expected_doc_ids": ["doc_005", "doc_006", "doc_007"],
+      "focus": "quantization"
+    },
+    {
+      "query_id": "q04",
+      "query_text": "增量写入后如何确保文档立即可检索",
+      "expected_doc_ids": ["doc_008", "doc_001"],
+      "focus": "index_refresh"
+    },
+    {
+      "query_id": "q05",
+      "query_text": "all-MiniLM-L6-v2 模型维度与体积",
+      "expected_doc_ids": ["doc_006", "doc_005"],
+      "focus": "model_parameters"
+    }
+  ]
+}
