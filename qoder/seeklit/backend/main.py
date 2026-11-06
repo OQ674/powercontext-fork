@@ -71,14 +71,18 @@ def _to_out(row: dict) -> dict:
         "language": m.get("language", ""),
         "url": m.get("url", ""),
         "is_sample": bool(m.get("is_sample", False)),
-        "abstract": _abstract_from_document(row.get("document"), m.get("title", "")),
+        "abstract": _abstract_from_document(row.get("document"), m.get("title", ""),
+                                            str(m.get("tags_csv", ""))),
         "distance": row.get("distance"),
     }
 
 
-def _abstract_from_document(document: str | None, title: str) -> str:
+def _abstract_from_document(document: str | None, title: str, tags_csv: str = "") -> str:
+    # document 末行是供全文检索用的标签行（见 db.paper_document），展示前剥离。
     if not document:
         return ""
+    if tags_csv and document.endswith("\n" + tags_csv):
+        document = document[: -(len(tags_csv) + 1)]
     if document.startswith(title):
         return document[len(title):].lstrip("\n")
     return document
@@ -200,8 +204,9 @@ def create_paper(p: PaperIn, x_api_token: str | None = Header(default=None)):
     item["id"] = item["id"] or _gen_id(item["title"])
     db.upsert([item])
     db.refresh_index()
-    return _to_out({"id": item["id"], "meta": db._meta(item),
-                    "document": db.paper_document(item["title"], item.get("abstract", ""))})
+    meta = db._meta(item)
+    return _to_out({"id": item["id"], "meta": meta,
+                    "document": db.paper_document(item["title"], item.get("abstract", ""), meta["tags_csv"])})
 
 
 @app.put("/api/papers/{paper_id}")
@@ -212,8 +217,9 @@ def update_paper(paper_id: str, p: PaperIn, x_api_token: str | None = Header(def
     db.delete([paper_id])
     db.upsert([item])
     db.refresh_index()
-    return _to_out({"id": paper_id, "meta": db._meta(item),
-                    "document": db.paper_document(item["title"], item.get("abstract", ""))})
+    meta = db._meta(item)
+    return _to_out({"id": paper_id, "meta": meta,
+                    "document": db.paper_document(item["title"], item.get("abstract", ""), meta["tags_csv"])})
 
 
 @app.delete("/api/papers/{paper_id}")

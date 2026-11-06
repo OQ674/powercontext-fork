@@ -38,6 +38,7 @@ OceanBase seekdb（嵌入式）── ~/seeklit-data
 
 ```
 ├── README.md              # 项目介绍/架构/seekdb 混合检索讲解/启动说明
+├── TECHNICAL_REPORT.md    # 技术报告：seekdb 使用细节、线上实测记录、已知限制
 ├── web\                   # 纯静态前端（零 npm 依赖，3 个文件）
 │   ├── index.html         # 单页：搜索(三模式切换)+过滤+结果(来源徽章)+管理弹窗
 │   ├── style.css / app.js # 样式 + 唯一请求出口（503 BACKEND_OFFLINE → 离线横幅）
@@ -50,7 +51,7 @@ OceanBase seekdb（嵌入式）── ~/seeklit-data
 └── scripts\               # 一键启动 / 隧道 / Secret 更新指引
 ```
 
-- **数据全部存于 seekdb**：标题+摘要作为 document（自动 ONNX 向量化，无需任何 API Key），元数据作为标量字段支持过滤；
+- **数据全部存于 seekdb**：标题+摘要+标签作为 document（自动 ONNX 向量化，无需任何 API Key；标签并入是因为 ik 全文索引只覆盖 document 列），其余字段作为标量元数据支持过滤；
 - **后端不可达时**：Function 返回稳定错误码 `BACKEND_OFFLINE`，前端展示离线横幅与本地运行指引，不白屏；
 - **命中来源标注**：hybrid 模式并行执行混合/纯语义/纯全文三路查询，反查标注 `sources/vector_rank/fulltext_rank`，让混合检索「看得见」。
 

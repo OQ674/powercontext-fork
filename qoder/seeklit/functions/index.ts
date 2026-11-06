@@ -40,9 +40,18 @@ async function forward(request: Request, targetPath: string, method: string): Pr
     }
     const resp = await fetch(`${backendUrl}${targetPath}`, init);
     const text = await resp.text();
+    const ctype = resp.headers.get("content-type") || "";
+    // 隧道存活但源站已挂时，cloudflared 会返回 502/504 的 HTML 页面；统一降级为 BACKEND_OFFLINE，
+    // 否则前端会拿到非 JSON 响应而无法展示离线横幅。
+    if (!ctype.includes("json") && (resp.status === 502 || resp.status === 503 || resp.status === 504)) {
+      return jsonResponse(503, {
+        code: "BACKEND_OFFLINE",
+        message: "演示服务当前离线：本地 seekdb 后端未启动或隧道中断。",
+      });
+    }
     return new Response(text, {
       status: resp.status,
-      headers: { "content-type": resp.headers.get("content-type") || "application/json; charset=utf-8" },
+      headers: { "content-type": ctype || "application/json; charset=utf-8" },
     });
   } catch {
     return jsonResponse(503, {

@@ -55,15 +55,21 @@ def col():
     return _init()
 
 
-def paper_document(title: str, abstract: str) -> str:
-    return f"{title}\n{abstract}"
+def paper_document(title: str, abstract: str, tags_line: str = "") -> str:
+    # WHY: FULLTEXT 索引只覆盖 document 列，而多数中文论文的检索词只出现在 tags
+    # （如 缓存/分布式事务）；把标签行追加进文档文本，IK 分词后关键词检索才能命中。
+    # display 侧由 main._abstract_from_document 依据 metadata.tags_csv 精确剥离该行。
+    doc = f"{title}\n{abstract}"
+    return f"{doc}\n{tags_line}" if tags_line else doc
 
 
 def upsert(items: list[dict]) -> None:
+    metas = [_meta(it) for it in items]
     _run(lambda: col().upsert(
         ids=[it["id"] for it in items],
-        documents=[paper_document(it["title"], it.get("abstract", "")) for it in items],
-        metadatas=[_meta(it) for it in items],
+        documents=[paper_document(it["title"], it.get("abstract", ""), m["tags_csv"])
+                   for it, m in zip(items, metas)],
+        metadatas=metas,
     ))
 
 
