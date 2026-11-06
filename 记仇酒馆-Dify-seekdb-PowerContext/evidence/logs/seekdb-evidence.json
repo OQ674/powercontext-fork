@@ -1,0 +1,94 @@
+{
+  "turns": [
+    {
+      "turn_no": 1,
+      "action": "我把吧台上的盐罐换成了糖罐",
+      "prop_used": "盐罐",
+      "grudge_after": 10,
+      "mood_after": 54,
+      "ending": 0
+    },
+    {
+      "turn_no": 2,
+      "action": "我把他的老花镜藏进冰桶里",
+      "prop_used": "老花镜",
+      "grudge_after": 25,
+      "mood_after": 46,
+      "ending": 0
+    },
+    {
+      "turn_no": 3,
+      "action": "老陈，今天有什么喝的？",
+      "prop_used": "冰块桶",
+      "grudge_after": 26,
+      "mood_after": 52,
+      "ending": 0
+    },
+    {
+      "turn_no": 4,
+      "action": "我把点唱机的音量拧到最大，然后躲到门后面",
+      "prop_used": "打烊牌",
+      "grudge_after": 36,
+      "mood_after": 46,
+      "ending": 0
+    },
+    {
+      "turn_no": 5,
+      "action": "我往他的抹布里挤了半管芥末",
+      "prop_used": "芥末膏",
+      "grudge_after": 47,
+      "mood_after": 40,
+      "ending": 0
+    },
+    {
+      "turn_no": 6,
+      "action": "我把「账本」抱到门口，让它在雨里待了一会儿",
+      "prop_used": "一次性雨衣",
+      "grudge_after": 57,
+      "mood_after": 34,
+      "ending": 0
+    },
+    {
+      "turn_no": 7,
+      "action": "我把他的记账本翻到最后一页，大声念了出来",
+      "prop_used": "记账本",
+      "grudge_after": 72,
+      "mood_after": 24,
+      "ending": 0
+    },
+    {
+      "turn_no": 8,
+      "action": "我在他的啤酒杯里加了三大勺辣椒酱",
+      "prop_used": "啤酒杯",
+      "grudge_after": 84,
+      "mood_after": 16,
+      "ending": 0
+    },
+    {
+      "turn_no": 9,
+      "action": "我把打烊牌翻成「营业中」，然后带了五个朋友进来",
+      "prop_used": "糖罐",
+      "grudge_after": 92,
+      "mood_after": 10,
+      "ending": 0
+    },
+    {
+      "turn_no": 10,
+      "action": "我把他的老花镜和盐罐一起锁进了储物间，然后把钥匙扔进了冰桶",
+      "prop_used": "糖罐",
+      "grudge_after": 100,
+      "mood_after": 0,
+      "ending": 1
+    }
+  ],
+  "state": {
+    "grudge": 100,
+    "mood": 0,
+    "turn_no": 10,
+    "ending": 1
+  },
+  "player": {
+    "scope_id": "scp_3s8k2zhyd8b8bzgfb0wpzyg8zw",
+    "scope_generation": 7
+  }
+}

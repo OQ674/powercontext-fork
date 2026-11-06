@@ -1,0 +1,50 @@
+# 记仇酒馆 · 本地依赖编排
+# 只包含 seekdb 与 bridge；Dify 用官方 docker compose 单独部署，PowerContext 用 uv 在本机启动。
+#
+#   cd deploy
+#   docker compose up -d --build
+#
+# 说明：
+#   - bridge 通过服务名 seekdb 访问数据库；
+#   - PowerContext 跑在宿主机，容器内用 host.docker.internal 访问；
+#   - Dify 容器访问 bridge 时，同样使用 host.docker.internal:8099（Linux 需在 Dify compose 里加
+#     extra_hosts: ["host.docker.internal:host-gateway"]）。
+
+name: grudge-tavern
+
+services:
+  seekdb:
+    image: oceanbase/seekdb:latest
+    container_name: tavern-seekdb
+    ports:
+      - "2881:2881"
+    environment:
+      ROOT_PASSWORD: "tavern-demo"
+      MEMORY_LIMIT: "2G"
+    volumes:
+      - ./seekdb-data:/var/lib/oceanbase
+    restart: unless-stopped
+
+  bridge:
+    build:
+      context: ../bridge
+    container_name: tavern-bridge
+    ports:
+      - "8099:8099"
+    environment:
+      SEEKDB_HOST: seekdb
+      SEEKDB_PORT: "2881"
+      SEEKDB_USER: root
+      SEEKDB_PASSWORD: "tavern-demo"
+      SEEKDB_DATABASE: tavern
+      POWERCONTEXT_URL: "http://host.docker.internal:8000"
+      POWERCONTEXT_TOKEN: ""
+      EMBED_BASE_URL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      EMBED_API_KEY: "sk-placeholder"
+      EMBED_MODEL: "text-embedding-v3"
+      EMBED_DIM: "1024"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - seekdb
+    restart: unless-stopped

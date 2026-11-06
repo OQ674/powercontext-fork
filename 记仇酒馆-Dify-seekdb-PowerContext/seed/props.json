@@ -1,0 +1,282 @@
+[
+  {
+    "id": 1,
+    "name": "盐罐",
+    "category": "调料",
+    "scene": "bar",
+    "danger": 0,
+    "mess": 1,
+    "description": "吧台左侧那只缺了口的白瓷盐罐，盖子有点松，一倒就是小半勺。",
+    "tags": "咸,调料,日常,经典,双胞胎"
+  },
+  {
+    "id": 2,
+    "name": "糖罐",
+    "category": "调料",
+    "scene": "bar",
+    "danger": 0,
+    "mess": 1,
+    "description": "和盐罐几乎一模一样的糖罐，老陈这些年一直分不清这两个罐子。",
+    "tags": "甜,调料,双胞胎,经典,以假乱真"
+  },
+  {
+    "id": 3,
+    "name": "辣椒酱",
+    "category": "调料",
+    "scene": "kitchen",
+    "danger": 1,
+    "mess": 2,
+    "description": "后厨那瓶自制辣椒酱，红得发黑，老陈自己舀的时候都只敢舀半勺。",
+    "tags": "辣,后厨,刺激,上色"
+  },
+  {
+    "id": 4,
+    "name": "芥末膏",
+    "category": "调料",
+    "scene": "kitchen",
+    "danger": 2,
+    "mess": 2,
+    "description": "一小管绿色的芥末膏，挤出来像牙膏，闻一下就能让人后退半步。",
+    "tags": "呛,后厨,刺激,眼泪"
+  },
+  {
+    "id": 5,
+    "name": "蜂蜜",
+    "category": "食材",
+    "scene": "kitchen",
+    "danger": 0,
+    "mess": 3,
+    "description": "黏得能拉丝的蜂蜜罐，勺子提起来，那条金线能挂很久。",
+    "tags": "黏,甜,难清理,拉丝"
+  },
+  {
+    "id": 6,
+    "name": "洗洁精",
+    "category": "清洁",
+    "scene": "storeroom",
+    "danger": 1,
+    "mess": 3,
+    "description": "储物间那桶洗洁精，按一下能压出半个杯子的泡沫。",
+    "tags": "泡沫,滑,难清理,泡泡"
+  },
+  {
+    "id": 7,
+    "name": "啤酒杯",
+    "category": "容器",
+    "scene": "bar",
+    "danger": 0,
+    "mess": 1,
+    "description": "厚底啤酒杯，杯壁上还挂着上一轮的泡沫，老陈擦杯子从来只擦外面。",
+    "tags": "杯子,日常,泡沫"
+  },
+  {
+    "id": 8,
+    "name": "冰块桶",
+    "category": "容器",
+    "scene": "bar",
+    "danger": 0,
+    "mess": 2,
+    "description": "吧台下面的冰块桶，冰是今天早上刚凿的，桶壁上全是水珠。",
+    "tags": "冰,凉,湿,化水"
+  },
+  {
+    "id": 9,
+    "name": "收音机",
+    "category": "电器",
+    "scene": "bar",
+    "danger": 0,
+    "mess": 1,
+    "description": "老陈的旧收音机，永远停在一个放戏曲的频道，天线用铁丝绑着。",
+    "tags": "声音,旧物,戏曲,吵"
+  },
+  {
+    "id": 10,
+    "name": "点唱机",
+    "category": "电器",
+    "scene": "bar",
+    "danger": 1,
+    "mess": 2,
+    "description": "角落里的点唱机，投一枚硬币能放一首歌，音量旋钮早就坏了，只会往大里转。",
+    "tags": "声音,音乐,吵,硬币"
+  },
+  {
+    "id": 11,
+    "name": "假蟑螂",
+    "category": "玩具",
+    "scene": "storeroom",
+    "danger": 0,
+    "mess": 1,
+    "description": "塑料假蟑螂，做工粗糙，但翻过来放在灯下看，很像那么回事。",
+    "tags": "吓人,道具,塑料,恶作剧经典"
+  },
+  {
+    "id": 12,
+    "name": "橡皮蜘蛛",
+    "category": "玩具",
+    "scene": "storeroom",
+    "danger": 0,
+    "mess": 1,
+    "description": "一只巴掌大的橡皮蜘蛛，腿是软的，捏一下会自己翻过来。",
+    "tags": "吓人,道具,橡胶,软"
+  },
+  {
+    "id": 13,
+    "name": "橘猫账本",
+    "category": "活物",
+    "scene": "bar",
+    "danger": 0,
+    "mess": 2,
+    "description": "酒馆的橘猫，名字叫「账本」，谁给吃的它就跟谁走，包括陌生人。",
+    "tags": "猫,活物,贪吃,叛变"
+  },
+  {
+    "id": 14,
+    "name": "拖把",
+    "category": "清洁",
+    "scene": "storeroom",
+    "danger": 0,
+    "mess": 3,
+    "description": "湿漉漉的拖把，靠墙立着，水一滴一滴落在水泥地上。",
+    "tags": "清洁,湿,难清理,水渍"
+  },
+  {
+    "id": 15,
+    "name": "打烊牌",
+    "category": "物件",
+    "scene": "bar",
+    "danger": 0,
+    "mess": 1,
+    "description": "木质双面牌，一面写「营业中」，一面写「已打烊」，挂在门玻璃上。",
+    "tags": "招牌,关门,日常,翻面"
+  },
+  {
+    "id": 16,
+    "name": "记账本",
+    "category": "物件",
+    "scene": "bar",
+    "danger": 0,
+    "mess": 1,
+    "description": "老陈的记账本，扉页写着「概不赊账」，后面的每一页都是赊账。",
+    "tags": "本子,账,秘密,把柄"
+  },
+  {
+    "id": 17,
+    "name": "老花镜",
+    "category": "物件",
+    "scene": "bar",
+    "danger": 0,
+    "mess": 1,
+    "description": "老陈的老花镜，镜腿用胶布缠过两回，摘下来就找不着。",
+    "tags": "眼镜,旧物,日常,看不清"
+  },
+  {
+    "id": 18,
+    "name": "一次性雨衣",
+    "category": "雨具",
+    "scene": "storeroom",
+    "danger": 0,
+    "mess": 2,
+    "description": "薄得像塑料袋的一次性雨衣，一撕就破，穿上会一直沙沙响。",
+    "tags": "雨具,塑料,沙沙响,薄"
+  },
+  {
+    "id": 19,
+    "name": "气球",
+    "category": "玩具",
+    "scene": "storeroom",
+    "danger": 1,
+    "mess": 2,
+    "description": "一包没吹的红黄气球，橡胶味很重，吹大了在耳边炸开能把人吓一跳。",
+    "tags": "气球,橡胶,吓人,突然"
+  },
+  {
+    "id": 20,
+    "name": "弹珠",
+    "category": "玩具",
+    "scene": "storeroom",
+    "danger": 1,
+    "mess": 2,
+    "description": "一小袋玻璃弹珠，倒在地上会滚得到处都是，踩上去很危险。",
+    "tags": "弹珠,滑,满地,滚"
+  },
+  {
+    "id": 21,
+    "name": "玩具假牙",
+    "category": "玩具",
+    "scene": "storeroom",
+    "danger": 0,
+    "mess": 1,
+    "description": "一副玩具假牙，上弦之后会咔哒咔哒地跳，跳得毫无规律。",
+    "tags": "玩具,发条,吓人,咔哒"
+  },
+  {
+    "id": 22,
+    "name": "咖啡粉",
+    "category": "食材",
+    "scene": "kitchen",
+    "danger": 0,
+    "mess": 2,
+    "description": "后厨的深烘咖啡粉，苦得很有主见，撒一点整杯都是它的味道。",
+    "tags": "苦,咖啡,调料,上色"
+  },
+  {
+    "id": 23,
+    "name": "味精",
+    "category": "调料",
+    "scene": "kitchen",
+    "danger": 0,
+    "mess": 1,
+    "description": "一大袋味精，老陈说这是他的秘密武器，从不告诉客人放了多少。",
+    "tags": "鲜,调料,后厨,秘密"
+  },
+  {
+    "id": 24,
+    "name": "番茄酱",
+    "category": "调料",
+    "scene": "kitchen",
+    "danger": 1,
+    "mess": 3,
+    "description": "挤挤装番茄酱，摇一摇再挤，会喷出一条红色的弧线。",
+    "tags": "红,酱,喷溅,难清理,像血"
+  },
+  {
+    "id": 25,
+    "name": "肥皂",
+    "category": "清洁",
+    "scene": "storeroom",
+    "danger": 0,
+    "mess": 3,
+    "description": "一块用了一半的肥皂，沾了水之后滑得根本抓不住。",
+    "tags": "滑,肥皂,难清理,抓不住"
+  },
+  {
+    "id": 26,
+    "name": "面粉",
+    "category": "食材",
+    "scene": "storeroom",
+    "danger": 0,
+    "mess": 3,
+    "description": "半袋面粉，轻轻一拍就起一团白雾，落在深色衣服上格外明显。",
+    "tags": "白,粉,难清理,白雾"
+  },
+  {
+    "id": 27,
+    "name": "橡皮筋",
+    "category": "小道具",
+    "scene": "storeroom",
+    "danger": 0,
+    "mess": 1,
+    "description": "一把橡皮筋，缠在门把手上，一拉能弹人一下。",
+    "tags": "弹,小道具,门把手,偷袭"
+  },
+  {
+    "id": 28,
+    "name": "旧唱片",
+    "category": "物件",
+    "scene": "bar",
+    "danger": 0,
+    "mess": 1,
+    "description": "一张旧唱片，B 面有一道划痕，放到那个位置就会跳针，一直重复同一句。",
+    "tags": "唱片,声音,跳针,循环"
+  }
+]
