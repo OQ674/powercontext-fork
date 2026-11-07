@@ -169,12 +169,16 @@ def search_keyword(query_text: str, k: int, filters: dict | None = None):
 
 def search_hybrid(query_text: str, k: int, filters: dict | None = None):
     query_param = {"where_document": {"$contains": query_text}, "n_results": k}
+    knn_param = {"query_texts": [query_text], "n_results": k}
     where = _scalar_where(filters)
     if where:
+        # hybrid_search 的全文路与向量路各自接收 where；只过滤 query 会让
+        # 未过滤的 KNN 结果经 RRF 混回最终结果。
         query_param["where"] = where
+        knn_param["where"] = where
     return _flatten(_run(lambda: col().hybrid_search(
         query=query_param,
-        knn={"query_texts": [query_text], "n_results": k},
+        knn=knn_param,
         rank={"rrf": {}},
         n_results=k,
         include=INCLUDE,

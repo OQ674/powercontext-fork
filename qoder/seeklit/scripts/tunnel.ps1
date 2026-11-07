@@ -1,31 +1,40 @@
-# 启动公网隧道（cloudflared 快速隧道：免注册、免 token）并输出公网地址
-# 前提：cloudflared.exe 已下载到 C:\Users\OQ\cloudflared.exe
-# 注意：快速隧道地址每次重启会变化，变更后按 deploy-secret.md 更新 Sites Secret
-$ErrorActionPreference = "Continue"
-$exe = "C:\Users\OQ\cloudflared.exe"
-if (-not (Test-Path $exe)) {
-  curl.exe -sL -o $exe "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe"
-}
-if (-not (Test-Path $exe)) { Write-Host "cloudflared 下载失败"; exit 1 }
+# 启动公网隧道（cloudflared 快速隧道：免注册、免 token）并输出公网地址。
+# 只使用本机现有 cloudflared，不自动下载或升级软件。
+$ErrorActionPreference = "Stop"
 
-# 已在运行则跳过
+$exe = (Get-Command cloudflared.exe -ErrorAction SilentlyContinue).Source
+if (-not $exe) {
+  $knownExe = Join-Path $env:USERPROFILE "cloudflared.exe"
+  if (Test-Path -LiteralPath $knownExe) { $exe = $knownExe }
+}
+if (-not $exe) {
+  throw "未找到 cloudflared.exe。请先按组织规则自行安装或放到 PATH；本脚本不会自动下载。"
+}
+
 $running = Get-Process cloudflared -ErrorAction SilentlyContinue
+$log = Join-Path $env:TEMP "seeklit-cloudflared.log"
 if (-not $running) {
-  Start-Process -WindowStyle Hidden $exe -ArgumentList "tunnel","--url","http://localhost:8001"
-  Start-Sleep -Seconds 10
+  if (Test-Path -LiteralPath $log) { Clear-Content -LiteralPath $log }
+  Start-Process -WindowStyle Hidden -FilePath $exe -ArgumentList @(
+    "tunnel", "--url", "http://127.0.0.1:8001", "--logfile", $log
+  )
+  Write-Host "cloudflared starting; log: $log"
 } else {
-  Write-Host "cloudflared 已在运行"
+  Write-Host "cloudflared 已在运行；沿用现有进程"
 }
 
-# 从日志/网络接口抓取 URL：通过本地元数据接口不可用，改为解析进程日志文件
-$log = "$env:TEMP\cloudflared-tunnel.log"
-if (Test-Path $log) {
-  $url = (Select-String -Path $log -Pattern "https://[a-z0-9-]+\.trycloudflare\.com" | Select -Last 1).Matches[0].Value
-  if ($url) {
-    Write-Host "公网地址: $url"
-    Set-Clipboard $url
-    Write-Host "(已复制到剪贴板) 下一步：按 scripts\deploy-secret.md 更新 SEEKLIT_BACKEND_URL"
+$url = $null
+for ($attempt = 0; $attempt -lt 15 -and -not $url; $attempt++) {
+  Start-Sleep -Seconds 1
+  if (Test-Path -LiteralPath $log) {
+    $match = Select-String -Path $log -Pattern "https://[a-z0-9-]+\.trycloudflare\.com" | Select-Object -Last 1
+    if ($match) { $url = $match.Matches[0].Value }
   }
-} else {
-  Write-Host "请从 cloudflared 启动参数窗口查看 https://xxx.trycloudflare.com 地址"
 }
+if (-not $url) {
+  throw "15 秒内未从日志取得隧道地址，请检查：$log"
+}
+
+Write-Host "公网地址: $url"
+Set-Clipboard $url
+Write-Host "地址已复制到剪贴板；快速隧道重启后地址会变化。"

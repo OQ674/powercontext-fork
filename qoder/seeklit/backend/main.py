@@ -121,18 +121,21 @@ def search(req: SearchRequest, x_api_token: str | None = Header(default=None)):
     k = max(1, min(req.n_results, 20))
     filters = req.filters.model_dump(exclude_none=True) if req.filters else {}
     tags = filters.pop("tags", None)
+    # tags 存在 metadata.tags_csv 中，当前 pyseekdb 不能直接按分隔值成员过滤。
+    # 先扩大候选集再做精确成员过滤，避免 top-k 之后过滤导致明明存在却返回空。
+    candidate_k = min(100, k * 5) if tags else k
     try:
         if req.mode == "semantic":
-            rows = _filter_rows_by_tags(db.search_semantic(req.query, k, filters), tags)
+            rows = _filter_rows_by_tags(db.search_semantic(req.query, candidate_k, filters), tags)[:k]
             return {"mode": req.mode, "hits": [
                 _hit(r, i + 1, ["vector"], i + 1, None) for i, r in enumerate(rows)
             ]}
         if req.mode == "keyword":
-            rows = _filter_rows_by_tags(db.search_keyword(req.query, k, filters), tags)
+            rows = _filter_rows_by_tags(db.search_keyword(req.query, candidate_k, filters), tags)[:k]
             return {"mode": req.mode, "hits": [
                 _hit(r, i + 1, ["fulltext"], None, i + 1) for i, r in enumerate(rows)
             ]}
-        rows = _filter_rows_by_tags(db.search_hybrid(req.query, k, filters), tags)
+        rows = _filter_rows_by_tags(db.search_hybrid(req.query, candidate_k, filters), tags)[:k]
         try:
             sem_rows = db.search_semantic(req.query, k * 2, filters)
             kw_rows = db.search_keyword(req.query, k * 2, filters)

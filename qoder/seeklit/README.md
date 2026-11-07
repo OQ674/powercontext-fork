@@ -22,16 +22,11 @@ SeekLit 是一个面向学生与科研人员的文献知识库：把标题、作
 
 ```
 浏览器（Qoder Sites 发布的静态站）
-   │  同源 fetch  /functions/v1/app/*
-   ▼
-Qoder Sites Function（Deno edge，白名单转发 + 8s 超时 + 离线降级）
-   │  HTTPS（cloudflared 快速隧道）
-   ▼
-FastAPI 后端（WSL Ubuntu 内）
-   │  pyseekdb SDK
-   ▼
-OceanBase seekdb（嵌入式）── ~/seeklit-data
-   向量索引(IVF cosine) + ik 全文索引 + 标量元数据
+   ├─ 实时链路：/functions/v1/app/* → Sites Function → HTTPS 隧道
+   │             → FastAPI → pyseekdb → OceanBase seekdb（嵌入式）
+   │             向量索引(IVF cosine) + ik 全文索引 + 标量元数据
+   └─ 不可达时：web/papers.csv（48 篇只读样例快照）
+                 浏览器内近似检索 + 过滤，并明确标注「本地样例」
 ```
 
 ## 目录结构
@@ -39,33 +34,35 @@ OceanBase seekdb（嵌入式）── ~/seeklit-data
 ```
 ├── README.md              # 项目介绍/架构/seekdb 混合检索讲解/启动说明
 ├── TECHNICAL_REPORT.md    # 技术报告：seekdb 使用细节、线上实测记录、已知限制
-├── web\                   # 纯静态前端（零 npm 依赖，3 个文件）
+├── web\                   # 纯静态前端（零 npm 依赖）
 │   ├── index.html         # 单页：搜索(三模式切换)+过滤+结果(来源徽章)+管理弹窗
-│   ├── style.css / app.js # 样式 + 唯一请求出口（503 BACKEND_OFFLINE → 离线横幅）
+│   ├── style.css / app.js # 实时请求、4.5s 超时、状态切换与只读样例检索
+│   └── papers.csv         # 与 seekdb 种子数据一致的 48 篇静态快照
 ├── functions\index.ts     # Qoder Sites Function（Deno）：白名单转发 + 8s 超时 + 离线降级
 ├── backend\               # WSL 内运行
 │   ├── main.py / db.py    # FastAPI + pyseekdb 封装（collection: 向量+全文+标量过滤）
 │   ├── requirements.txt
 │   └── seed\papers.csv（48 条中英文献）+ seed_import.py（幂等导入）
-├── dev\                   # 本地开发入口（不进发布包）
-└── scripts\               # 一键启动 / 隧道 / Secret 更新指引
+├── dev\                   # 本地 Function 与离线回归测试
+└── scripts\               # 一键启动 / 隧道 / Secret 更新指引（不会自动下载工具）
 ```
 
 - **数据全部存于 seekdb**：标题+摘要+标签作为 document（自动 ONNX 向量化，无需任何 API Key；标签并入是因为 ik 全文索引只覆盖 document 列），其余字段作为标量元数据支持过滤；
-- **后端不可达时**：Function 返回稳定错误码 `BACKEND_OFFLINE`，前端展示离线横幅与本地运行指引，不白屏；
+- **后端不可达时**：Function 返回稳定错误码 `BACKEND_OFFLINE`；前端自动载入随站点发布的 48 篇只读快照，支持浏览、三种近似排序、年份/来源/标签过滤，并明确标注「本地样例」。新增、删除和导入会被禁用，浏览器结果不会冒充 seekdb；
 - **命中来源标注**：hybrid 模式并行执行混合/纯语义/纯全文三路查询，反查标注 `sources/vector_rank/fulltext_rank`，让混合检索「看得见」。
+- **过滤一致性**：混合检索的全文路与 KNN 路使用同一个 `where`；标签过滤先扩大候选集、再按标签成员精确筛选，避免 RRF 混回范围外结果或 top-k 后过滤导致漏召回。
 
 ## 三个硬性要求的落实
 
 | 赛题要求 | 落实方式 |
 |---|---|
-| 必须使用 Qoder 开发 | 全部代码在 Qoder（AI IDE）会话中生成、调试与发布 |
-| 核心功能实际使用 seekdb | 检索核心 = pyseekdb 的向量 + 全文 + RRF 混合检索与标量过滤（见 `backend/db.py`），线上可实时体验 |
-| 通过 Qoder Sites 发布 | 静态站 + Sites Function（`functions/index.ts`）经 prepare/publish 流程发布 |
+| 必须使用 Qoder 开发 | 项目由 Qoder（AI IDE）会话完成需求拆解、主体编码、联调与首次发布；会话产物和站点描述文件随项目保留 |
+| 核心功能实际使用 seekdb | 实时模式的检索核心 = pyseekdb 的向量 + 全文 + RRF 混合检索与标量过滤（见 `backend/db.py`）；样例降级与实时结果在界面上严格区分 |
+| 通过 Qoder Sites 发布 | 静态站 + Sites Function（`functions/index.ts`）经 Qoder Sites prepare/publish 流程发布 |
 
 ## 本地运行（3 步）
 
-前置：Windows 11 + WSL2（Ubuntu-24.04）+ Deno
+前置：Windows 11 + WSL2（Ubuntu-24.04）+ Deno。脚本只使用本机已有环境，不会静默安装依赖或下载 cloudflared。
 
 ```powershell
 # 1) 首次：WSL 内建 venv 并安装依赖
@@ -90,11 +87,19 @@ powershell -ExecutionPolicy Bypass -File scripts\tunnel.ps1
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | GET | `/api/health` | 探活 + 文献总数 |
-| POST | `/api/search` | 三模式检索 `{query, mode: hybrid\|semantic\|keyword, n_results, filters{year_min, year_max, venue}}` |
+| POST | `/api/search` | 三模式检索 `{query, mode: hybrid\|semantic\|keyword, n_results, filters{year_min, year_max, venue, tags}}` |
 | GET/POST/PUT/DELETE | `/api/papers...` | 文献 CRUD（写入即自动向量化） |
 | POST | `/api/import` | CSV 批量导入（≤200 条/批） |
 | POST | `/api/reindex` | 手动刷新索引 |
 
-## 卸载
+## 验证
 
-项目源码直接删除目录即可；WSL 环境一键清零：`wsl --unregister Ubuntu-24.04`。
+```powershell
+node --check web\app.js
+node dev\offline_smoke_test.js
+python backend\seed\check_csv.py
+deno check functions\index.ts
+deno check dev\function-local.ts
+```
+
+`offline_smoke_test.js` 会模拟 Function 返回 503，验证 48 篇快照、样例标识、检索和组合过滤；真实 seekdb 回归还应确认年份过滤结果全部落在范围内，以及标签过滤能召回对应文献。

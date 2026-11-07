@@ -10,11 +10,16 @@
 <body>
 <header class="topbar">
   <div class="brand"><span class="logo">SeekLit</span><span class="sub">科研文献混合检索库 · Powered by OceanBase seekdb</span></div>
-  <button id="btn-manage" class="ghost" type="button">文献管理</button>
+  <div class="top-actions">
+    <span id="service-status" class="service-status checking"><span class="status-dot"></span>连接 seekdb…</span>
+    <button id="btn-manage" class="ghost" type="button">文献管理</button>
+  </div>
 </header>
 
 <div id="offline-banner" class="offline hidden">
-  演示服务当前离线：本地 seekdb 后端未启动或隧道中断。<a href="https://github.com/OQ674/seeklit" target="_blank" rel="noopener">查看本地运行指引</a>
+  <b>本地样例模式</b>：实时 seekdb 服务暂不可达，检索已自动切换到随站点发布的 48 篇样例快照；写入功能暂停。
+  <button id="btn-retry-live" class="inline-action" type="button">重试实时服务</button>
+  <a href="https://github.com/OQ674/powercontext-fork/tree/2026-competition-ecosystem/qoder/seeklit" target="_blank" rel="noopener">查看 seekdb 实现与复现说明</a>
 </div>
 
 <main>
@@ -38,6 +43,13 @@
         <label>来源 <select id="venue-filter"><option value="">全部</option></select></label>
       </div>
     </details>
+    <div class="quick-row" aria-label="示例查询">
+      <span>试试：</span>
+      <button class="quick-query" type="button">大模型如何利用外部知识</button>
+      <button class="quick-query" type="button">分布式数据库一致性</button>
+      <button class="quick-query" type="button">向量检索</button>
+      <button class="quick-query" type="button">缓存</button>
+    </div>
   </section>
 
   <section id="results" class="results"></section>
@@ -80,8 +92,8 @@
 </dialog>
 
 <footer class="foot">
-  数据存储于 <b>OceanBase seekdb</b>（嵌入式模式，pyseekdb）——向量索引 + ik 全文索引 + RRF 混合排序。
-  样例数据已标注「样例」徽章。
+  实时模式的数据存储与检索由 <b>OceanBase seekdb</b>（嵌入式模式，pyseekdb）完成：向量索引 + ik 全文索引 + RRF 混合排序。<br>
+  服务不可达时仅使用随站点发布的只读样例快照，并明确标注「本地样例」；不会把浏览器计算冒充 seekdb 结果。
 </footer>
 
 <script src="app.js"></script>
