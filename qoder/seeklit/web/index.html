@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SeekLit · 科研文献混合检索库</title>
+<meta name="description" content="基于 OceanBase seekdb 混合检索（语义向量 + 全文关键词 RRF 融合 + 标量过滤）的科研文献知识库。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="logo">SeekLit</span><span class="sub">科研文献混合检索库 · Powered by OceanBase seekdb</span></div>
+  <div class="top-actions">
+    <span id="service-status" class="service-status checking"><span class="status-dot"></span>连接 seekdb…</span>
+    <button id="btn-manage" class="ghost" type="button">文献管理</button>
+  </div>
+</header>
+
+<div id="offline-banner" class="offline hidden">
+  <b>本地样例模式</b>：实时 seekdb 服务暂不可达，检索已自动切换到随站点发布的 48 篇样例快照；写入功能暂停。
+  <button id="btn-retry-live" class="inline-action" type="button">重试实时服务</button>
+  <a href="https://github.com/OQ674/powercontext-fork/tree/2026-competition-ecosystem/qoder/seeklit" target="_blank" rel="noopener">查看 seekdb 实现与复现说明</a>
+</div>
+
+<main>
+  <section class="search-zone">
+    <div class="search-row">
+      <input id="q" type="search" placeholder="用一句话描述你想找的文献，如：大模型如何利用外部知识" autocomplete="off">
+      <button id="btn-search" type="button">检索</button>
+    </div>
+    <div class="mode-row">
+      <label class="mode"><input type="radio" name="mode" value="hybrid" checked><span>混合检索</span></label>
+      <label class="mode"><input type="radio" name="mode" value="semantic"><span>语义检索</span></label>
+      <label class="mode"><input type="radio" name="mode" value="keyword"><span>关键词检索</span></label>
+      <span class="hint" id="mode-hint">向量 + 全文 RRF 融合</span>
+    </div>
+    <details class="filters">
+      <summary>过滤条件</summary>
+      <div class="filter-grid">
+        <label>年份从 <input id="year-min" type="number" min="1970" max="2030" placeholder="如 2015"></label>
+        <label>到 <input id="year-max" type="number" min="1970" max="2030" placeholder="如 2024"></label>
+        <label>标签 <select id="tag-filter"><option value="">全部</option></select></label>
+        <label>来源 <select id="venue-filter"><option value="">全部</option></select></label>
+      </div>
+    </details>
+    <div class="quick-row" aria-label="示例查询">
+      <span>试试：</span>
+      <button class="quick-query" type="button">大模型如何利用外部知识</button>
+      <button class="quick-query" type="button">分布式数据库一致性</button>
+      <button class="quick-query" type="button">向量检索</button>
+      <button class="quick-query" type="button">缓存</button>
+    </div>
+  </section>
+
+  <section id="results" class="results"></section>
+  <div id="empty" class="empty hidden">输入查询开始检索，或浏览<a href="#" id="link-browse">全部文献</a></div>
+</main>
+
+<dialog id="dlg-manage">
+  <div class="dlg-head"><h2>文献管理</h2><button class="ghost" id="dlg-close" type="button">关闭</button></div>
+  <div class="tabs">
+    <button class="tab active" data-tab="add" type="button">新增文献</button>
+    <button class="tab" data-tab="list" type="button">文献列表</button>
+    <button class="tab" data-tab="import" type="button">批量导入</button>
+  </div>
+
+  <form id="form-add" class="pane active">
+    <label>标题 <input id="f-title" required></label>
+    <label>作者 <input id="f-authors" placeholder="如 Zhang et al."></label>
+    <div class="row2">
+      <label>年份 <input id="f-year" type="number" value="2024"></label>
+      <label>来源 <input id="f-venue" placeholder="如 SIGMOD / arXiv"></label>
+    </div>
+    <label>标签（分号分隔）<input id="f-tags" placeholder="如 向量检索;RAG"></label>
+    <label>语言 <select id="f-lang"><option value="zh">中文</option><option value="en">English</option></select></label>
+    <label>摘要 <textarea id="f-abstract" rows="4"></textarea></label>
+    <label>链接 <input id="f-url" type="url" placeholder="https://"></label>
+    <button type="submit">保存并重建索引</button>
+  </form>
+
+  <div id="pane-list" class="pane">
+    <input id="list-q" type="search" placeholder="按标题搜索">
+    <div id="paper-list" class="paper-list"></div>
+  </div>
+
+  <div id="pane-import" class="pane">
+    <p class="small">粘贴 CSV（表头：id,title,authors,year,venue,tags,language,abstract,url），单批最多 200 条。标签用分号分隔。</p>
+    <textarea id="csv-text" rows="8" placeholder="title,authors,year,venue,tags,language,abstract,url&#10;我的论文,我,2024,arXiv,向量检索;测试,zh,摘要内容,https://"></textarea>
+    <button id="btn-import" type="button">导入</button>
+    <div id="import-result" class="small"></div>
+  </div>
+</dialog>
+
+<footer class="foot">
+  实时模式的数据存储与检索由 <b>OceanBase seekdb</b>（嵌入式模式，pyseekdb）完成：向量索引 + ik 全文索引 + RRF 混合排序。<br>
+  服务不可达时仅使用随站点发布的只读样例快照，并明确标注「本地样例」；不会把浏览器计算冒充 seekdb 结果。
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
