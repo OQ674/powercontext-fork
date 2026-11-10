@@ -55,18 +55,52 @@ class TaskStateStore:
             return None
 
     # ------------------------------------------------------------------
+    def _existing_texts(self, task_id: str, scope_id: Optional[str]) -> set:
+        """收集已存在的状态条目正文（PowerContext + 本地镜像），用于写入去重。"""
+
+        existing = set()
+
+        if scope_id and self.client is not None:
+            try:
+                for item in self.client.list_memories(scope_id):
+                    text = str(item.get("text") or "").strip()
+                    if text:
+                        existing.add(text)
+            except PowerContextError:
+                pass
+
+        try:
+            rows = self.database.query(
+                "SELECT kind, content FROM sdd_task_progress WHERE task_id = %s",
+                (task_id,),
+            )
+        except Exception:  # pragma: no cover - 镜像表不可用时不影响主流程
+            rows = []
+        for row in rows:
+            existing.add(encode_state(task_id, row["kind"], row["content"]).strip())
+
+        return existing
+
+    # ------------------------------------------------------------------
     def save(self, task_id: str, entries: Sequence[Tuple[str, str]]) -> Dict[str, object]:
-        """写入状态条目。
+        """写入状态条目（幂等）。
 
         ``entries`` 形如 ``[("done", "导入规格 5 条"), ("todo", "实现金额筛选")]``。
+
+        同一 ``[任务ID][类型] 内容`` 已存在时跳过，避免重复运行累积重复条目。
         """
 
         scope_id = self.scope_id()
+        existing = self._existing_texts(task_id, scope_id)
         written: List[str] = []
+        skipped: List[str] = []
         for kind, content in entries:
             if kind not in STATE_KINDS:
                 raise ValueError(f"未知的状态类型：{kind}")
             text = encode_state(task_id, kind, content)
+            if text in existing:
+                skipped.append(f"[{kind}] {content}")
+                continue
             self.database.execute(
                 "INSERT INTO sdd_task_progress (task_id, kind, content, origin, created_at)"
                 " VALUES (%s, %s, %s, %s, NOW())",
@@ -74,11 +108,13 @@ class TaskStateStore:
             )
             if scope_id and self.client is not None:
                 self.client.remember(scope_id, "sdd-task-state", text)
+            existing.add(text)
             written.append(f"[{kind}] {content}")
         return {
             "task_id": task_id,
             "scope_id": scope_id,
             "written": written,
+            "skipped": skipped,
             "powercontext": bool(scope_id),
         }
 
@@ -104,9 +140,14 @@ class TaskStateStore:
             (task_id,),
         )
         state = TaskState(task_id=task_id, origin="seekdb:sdd_task_progress")
+        seen = set()
         for row in rows:
             kind = row["kind"]
             content = row["content"]
+            key = (kind, content)
+            if key in seen:
+                continue
+            seen.add(key)
             if kind == "done":
                 state.done.append(content)
             elif kind == "todo":

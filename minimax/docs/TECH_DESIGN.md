@@ -83,4 +83,6 @@ minimax/
 * 检索为**词法召回**（关键词 + 规格显式关联），未使用向量检索：当前环境没有可用的 Embedding 服务，
   接入 seekdb 向量索引的接口已预留（`sdd_code_symbol` / `sdd_spec_item` 预留向量列位）。
 * 状态条目用 `[任务ID][类型] 内容` 前缀编码，使 PowerContext 退化为纯文本检索时仍可稳定读回。
+* `state-save` 幂等：写入前按前缀比对已有条目，重复内容直接跳过；`decode_states` 读取时再按
+  `(类型, 内容)` 去重一次。因此反复执行验证样例，PowerContext 中始终是同样干净的 7 条状态。
 * 补丁应用自实现统一 diff 解析，避免依赖 git / patch 命令，保证在任意评审环境可复现。

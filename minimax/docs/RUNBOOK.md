@@ -152,3 +152,6 @@ cd minimax && python -m pytest -q tests
    `mode=replay`；配置 Key 后同一命令会真实调用 MiniMax 接口（`mode=online`）。
 5. **上下文召回以关键词命中为主**：模块不做向量检索（当前环境没有可用的 Embedding 服务）；
    规格里声明的"关联代码/关联测试"是优先级最高的来源，关键词命中只用于补充与排序。
+6. **`state-save` 幂等**：同一条 `[任务ID][类型] 内容` 已存在时会跳过（计入 `skipped`），
+   重复执行验证样例不会在 PowerContext 中累积重复条目；若要彻底从空状态开始，
+   按上文第 3 节删除 PowerContext 的 SQLite 存储后重启服务。

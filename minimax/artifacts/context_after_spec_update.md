@@ -211,11 +211,11 @@
 - `tests/test_filters.py::test_filters_by_status_string` — （无说明） — 被生效规格声明为关联测试
 
 ## 四、已完成事项、待办事项与已有验证结果
-- 状态来源：powercontext:scp_4zzjwe6r0f22fb9yywq0390ykf
-- [已完成] 由 MiniMax 生成补丁并应用到 filter_orders 与 HTTP 查询接口
-- [已完成] 在 seekdb 中建立规格/代码/测试索引并完成三路召回
+- 状态来源：powercontext:scp_7nd99vvkpwf1h06q9hgpaxg50e
 - [已完成] 导入 5 条规格到 seekdb（规格 / 代码符号 / 测试用例）
+- [已完成] 在 seekdb 中建立规格/代码/测试索引并完成三路召回
 - [已完成] 完成 为订单查询增加金额区间筛选
+- [已完成] 由 MiniMax 生成补丁并应用到 filter_orders 与 HTTP 查询接口
 - [待办] 为金额区间筛选补充边界用例
 - [验证] after python -m pytest -q tests → 退出码 0, 通过 37, 失败 0
 - [备注] 上下文选择方式：规格声明的关联代码/关联测试优先，关键词命中作为补充

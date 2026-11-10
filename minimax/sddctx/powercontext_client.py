@@ -131,9 +131,10 @@ def encode_state(task_id: str, kind: str, content: str) -> str:
 
 
 def decode_states(task_id: str, items: List[Dict[str, Any]]) -> TaskState:
-    """把记忆条目解析成任务状态。"""
+    """把记忆条目解析成任务状态（按 ``(类型, 内容)`` 去重并保留首次出现顺序）。"""
 
     state = TaskState(task_id=task_id, origin="powercontext")
+    seen = set()
     for item in items:
         text = str(item.get("text") or "")
         match = _STATE_PATTERN.match(text)
@@ -143,6 +144,10 @@ def decode_states(task_id: str, items: List[Dict[str, Any]]) -> TaskState:
             continue
         kind = match.group("kind").strip()
         content = match.group("content").strip()
+        key = (kind, content)
+        if key in seen:
+            continue
+        seen.add(key)
         if kind == "done":
             state.done.append(content)
         elif kind == "todo":

@@ -2,9 +2,9 @@
 
 - PowerContext 地址：`http://127.0.0.1:8000`
 - Scope 标题：`sdd-context-module`
-- Scope ID：`scp_4zzjwe6r0f22fb9yywq0390ykf`
+- Scope ID：`scp_7nd99vvkpwf1h06q9hgpaxg50e`
 - 任务 ID：`TASK-ORD-003`
-- 读取时间：2026-11-10T20:56:40
+- 读取时间：2026-11-10T21:02:38
 
 ## 一、Scope 下的全部记忆条目（原始返回）
 
@@ -13,37 +13,7 @@
   {
     "artifact": {
       "family": "atomic-memory",
-      "artifact_id": "art_3db5dfecf1474169bfd18103703c807a",
-      "revision": 1
-    },
-    "kind": "sdd-task-state",
-    "state": "active",
-    "text": "[TASK-ORD-003][done] 由 MiniMax 生成补丁并应用到 filter_orders 与 HTTP 查询接口"
-  },
-  {
-    "artifact": {
-      "family": "atomic-memory",
-      "artifact_id": "art_73f970c6885b4de485fb40d444ac60b3",
-      "revision": 1
-    },
-    "kind": "sdd-task-state",
-    "state": "active",
-    "text": "[TASK-ORD-003][done] 在 seekdb 中建立规格/代码/测试索引并完成三路召回"
-  },
-  {
-    "artifact": {
-      "family": "atomic-memory",
-      "artifact_id": "art_7445e879c51c4a28b2b502eb0fea04b4",
-      "revision": 1
-    },
-    "kind": "sdd-task-state",
-    "state": "active",
-    "text": "[TASK-ORD-003][note] 上下文选择方式：规格声明的关联代码/关联测试优先，关键词命中作为补充"
-  },
-  {
-    "artifact": {
-      "family": "atomic-memory",
-      "artifact_id": "art_cf83fa8f5c6e44818d47399767b8a40f",
+      "artifact_id": "art_2aa71dd0f6c549ec9bb7f155d44c9c81",
       "revision": 1
     },
     "kind": "sdd-task-state",
@@ -53,7 +23,27 @@
   {
     "artifact": {
       "family": "atomic-memory",
-      "artifact_id": "art_d662d1cd71774fe9bd249ba76a463eb3",
+      "artifact_id": "art_320ed70cb2eb45b782b88c5914bff0e7",
+      "revision": 1
+    },
+    "kind": "sdd-task-state",
+    "state": "active",
+    "text": "[TASK-ORD-003][todo] 为金额区间筛选补充边界用例"
+  },
+  {
+    "artifact": {
+      "family": "atomic-memory",
+      "artifact_id": "art_50b8ef992b324e65832d985f39c1ad3a",
+      "revision": 1
+    },
+    "kind": "sdd-task-state",
+    "state": "active",
+    "text": "[TASK-ORD-003][done] 在 seekdb 中建立规格/代码/测试索引并完成三路召回"
+  },
+  {
+    "artifact": {
+      "family": "atomic-memory",
+      "artifact_id": "art_512abd7e17a14fc49b531c80ec2f5b75",
       "revision": 1
     },
     "kind": "sdd-task-state",
@@ -63,7 +53,7 @@
   {
     "artifact": {
       "family": "atomic-memory",
-      "artifact_id": "art_df807a1a996644b2bc73db0472153a4f",
+      "artifact_id": "art_5c240acacfbb49f0a9cc25a3ecbe8f3b",
       "revision": 1
     },
     "kind": "sdd-task-state",
@@ -73,12 +63,22 @@
   {
     "artifact": {
       "family": "atomic-memory",
-      "artifact_id": "art_e339ff1fac9242cea34ccd057bd7ae2e",
+      "artifact_id": "art_8976ab90355c4135a73a24cfcbe00ffd",
       "revision": 1
     },
     "kind": "sdd-task-state",
     "state": "active",
-    "text": "[TASK-ORD-003][todo] 为金额区间筛选补充边界用例"
+    "text": "[TASK-ORD-003][done] 由 MiniMax 生成补丁并应用到 filter_orders 与 HTTP 查询接口"
+  },
+  {
+    "artifact": {
+      "family": "atomic-memory",
+      "artifact_id": "art_d84de225576e4f3e9f441667ff14624b",
+      "revision": 1
+    },
+    "kind": "sdd-task-state",
+    "state": "active",
+    "text": "[TASK-ORD-003][note] 上下文选择方式：规格声明的关联代码/关联测试优先，关键词命中作为补充"
   }
 ]
 ```
@@ -101,10 +101,10 @@
   "description": "",
   "status": "in_progress",
   "done": [
-    "由 MiniMax 生成补丁并应用到 filter_orders 与 HTTP 查询接口",
-    "在 seekdb 中建立规格/代码/测试索引并完成三路召回",
     "导入 5 条规格到 seekdb（规格 / 代码符号 / 测试用例）",
-    "完成 为订单查询增加金额区间筛选"
+    "在 seekdb 中建立规格/代码/测试索引并完成三路召回",
+    "完成 为订单查询增加金额区间筛选",
+    "由 MiniMax 生成补丁并应用到 filter_orders 与 HTTP 查询接口"
   ],
   "todo": [
     "为金额区间筛选补充边界用例"
@@ -123,8 +123,8 @@
   "notes": [
     "上下文选择方式：规格声明的关联代码/关联测试优先，关键词命中作为补充"
   ],
-  "origin": "powercontext:scp_4zzjwe6r0f22fb9yywq0390ykf"
+  "origin": "powercontext:scp_7nd99vvkpwf1h06q9hgpaxg50e"
 }
 ```
 
-- 状态来源：`powercontext:scp_4zzjwe6r0f22fb9yywq0390ykf`
+- 状态来源：`powercontext:scp_7nd99vvkpwf1h06q9hgpaxg50e`

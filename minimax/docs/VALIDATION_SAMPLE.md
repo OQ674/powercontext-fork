@@ -83,6 +83,9 @@
    模型响应（补丁）与哈希；`artifacts/minimax_patch.diff` 与最终代码差异一致。
 4. **代码修改有效**：同一组目标功能测试修改前失败、修改后通过；回归测试修改前后均通过。
 5. **状态能够复用**：从空状态保存 → **重启模块**（新进程）→ 读回并用于后续上下文。
+   `state-save` 是**幂等**的：同一条 `[任务ID][类型] 内容` 重复写入会被跳过
+   （返回 `written: []` / `skipped: [...]`），因此反复执行验证样例不会在
+   PowerContext 中累积重复条目，读回的仍是干净的 7 条状态。
 
 ## 7. 重置方法
 
@@ -123,9 +126,10 @@ RESET_DB=1 bash scripts/reset_demo.sh
 | 修改前目标功能测试 | 退出码 1，**1 通过 / 11 失败**（`TypeError: filter_orders() got an unexpected keyword argument 'min_amount'`） | `logs/pytest_before_feature.log` |
 | 修改后目标功能测试 | 退出码 0，**12 通过 / 0 失败** | `logs/pytest_after_feature.log` |
 | 修改后全部测试 | 退出码 0，**37 通过 / 0 失败**（12 功能 + 25 回归） | `logs/pytest_after.log` |
+| 模块自测 | 退出码 0，**6 通过 / 0 失败** | `logs/pytest_module.log` |
 | MiniMax 参与 | `mode=replay`，模型 `MiniMax-M3.1-Flash (MiniMax Code agent)`，补丁应用到 `filters.py` 与 `service.py`；`recorded_prompt_matches_context=True` | `artifacts/minimax_dev_log.jsonl`、`artifacts/minimax_patch.diff` |
-| 数据库参与 | 100 条 SQL 记录（50 条检索命中、3 条测试记录） | `logs/db_query_log.md` |
-| 状态保存与复用 | Scope `scp_4zzjwe6r0f22fb9yywq0390ykf` 下 7 条记忆；**新进程**读回并写入下一次上下文 | `artifacts/powercontext_state_log.md`、`artifacts/context_after.md` |
+| 数据库参与 | 101 条 SQL 记录（50 条检索命中、3 条测试记录） | `logs/db_query_log.md` |
+| 状态保存与复用 | Scope `scp_7nd99vvkpwf1h06q9hgpaxg50e` 下 7 条记忆；**新进程**读回并写入下一次上下文 | `artifacts/powercontext_state_log.md`、`artifacts/context_after.md` |
 | 规格变更 | `SPEC-ORD-003` 升到第 2 版，关键词新增 `Decimal, 精确十进制`，正文新增第 8 条验收标准 | `artifacts/context_after_spec_update.md` |
 
 > 上述 Scope ID、条数等为本次运行的具体取值；重新执行时 ID 会变化，流程与结论不变。

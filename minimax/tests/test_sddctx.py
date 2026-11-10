@@ -18,6 +18,7 @@ sys.path.insert(0, str(ROOT))
 
 from sddctx.importer import _field, sha256_text  # noqa: E402
 from sddctx.patcher import apply_unified_diff, make_unified_diff  # noqa: E402
+from sddctx.powercontext_client import decode_states, encode_state  # noqa: E402
 from sddctx.retriever import tokenize  # noqa: E402
 
 
@@ -63,3 +64,17 @@ def test_apply_diff_rejects_wrong_context(tmp_path):
     target.write_text("def g():\n    return 3\n", encoding="utf-8")
     with pytest.raises(ValueError):
         apply_unified_diff(diff, tmp_path)
+
+
+def test_decode_states_deduplicates_repeated_entries():
+    """重复写入的状态条目读回时只保留一份（state-save 幂等的基础）。"""
+
+    items = [
+        {"text": encode_state("TASK-1", "done", "导入规格")},
+        {"text": encode_state("TASK-1", "done", "导入规格")},
+        {"text": encode_state("TASK-1", "todo", "补充边界用例")},
+        {"text": encode_state("TASK-2", "done", "别的任务")},
+    ]
+    state = decode_states("TASK-1", items)
+    assert state.done == ["导入规格"]
+    assert state.todo == ["补充边界用例"]

@@ -209,4 +209,4 @@
 - `tests/test_filters.py::test_filters_by_status_string` — （无说明） — 被生效规格声明为关联测试
 
 ## 四、已完成事项、待办事项与已有验证结果
-- 状态来源：powercontext:scp_4zzjwe6r0f22fb9yywq0390ykf
+- 状态来源：powercontext:scp_7nd99vvkpwf1h06q9hgpaxg50e

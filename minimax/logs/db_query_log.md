@@ -1,111 +1,112 @@
 # seekdb 查询记录（数据库实际参与证据）
 
-共 100 条 SQL，50 条检索命中，3 条测试记录。
+共 101 条 SQL，50 条检索命中，3 条测试记录。
 
 ## 一、SQL 执行记录
 
 | # | session | SQL | 影响行数 | 耗时(ms) |
 | --- | --- | --- | --- | --- |
-| 1 | 20261110205611 | `SELECT VERSION()` | 1 | 0.857 |
-| 1000001 | 20261110205614 | `USE `sddctx`` | 0 | 0.844 |
-| 1000002 | 20261110205614 | `SELECT id, content_hash, revision FROM sdd_spec_item WHERE spec_id = %s` | 0 | 5.279 |
-| 1000003 | 20261110205614 | `INSERT INTO sdd_spec_item (spec_id, title, module, status, body, keywords, related_code, related_tests, source_file, content_hash, revision, updated_at) VALUES ` | 1 | 14.426 |
-| 1000004 | 20261110205614 | `SELECT id, content_hash, revision FROM sdd_spec_item WHERE spec_id = %s` | 0 | 0.714 |
-| 1000005 | 20261110205614 | `INSERT INTO sdd_spec_item (spec_id, title, module, status, body, keywords, related_code, related_tests, source_file, content_hash, revision, updated_at) VALUES ` | 1 | 7.129 |
-| 1000006 | 20261110205614 | `SELECT id, content_hash, revision FROM sdd_spec_item WHERE spec_id = %s` | 0 | 0.848 |
-| 1000007 | 20261110205614 | `INSERT INTO sdd_spec_item (spec_id, title, module, status, body, keywords, related_code, related_tests, source_file, content_hash, revision, updated_at) VALUES ` | 1 | 5.698 |
-| 1000008 | 20261110205614 | `SELECT id, content_hash, revision FROM sdd_spec_item WHERE spec_id = %s` | 0 | 0.626 |
-| 1000009 | 20261110205614 | `INSERT INTO sdd_spec_item (spec_id, title, module, status, body, keywords, related_code, related_tests, source_file, content_hash, revision, updated_at) VALUES ` | 1 | 6.984 |
-| 1000010 | 20261110205614 | `SELECT id, content_hash, revision FROM sdd_spec_item WHERE spec_id = %s` | 0 | 0.574 |
-| 1000011 | 20261110205614 | `INSERT INTO sdd_spec_item (spec_id, title, module, status, body, keywords, related_code, related_tests, source_file, content_hash, revision, updated_at) VALUES ` | 1 | 6.816 |
-| 1000012 | 20261110205614 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 27.434 |
-| 1000013 | 20261110205614 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 7.194 |
-| 1000014 | 20261110205614 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, 'class'` | 1 | 9.023 |
-| 1000015 | 20261110205614 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 6.516 |
-| 1000016 | 20261110205614 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, 'class'` | 1 | 7.124 |
-| 1000017 | 20261110205614 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 6.392 |
-| 1000018 | 20261110205614 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 5.794 |
-| 1000019 | 20261110205614 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, 'class'` | 1 | 7.401 |
-| 1000020 | 20261110205614 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 6.302 |
-| 1000021 | 20261110205614 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, 'class'` | 1 | 6.992 |
-| 1000022 | 20261110205614 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 6.695 |
-| 1000023 | 20261110205614 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 6.757 |
-| 1000024 | 20261110205614 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 5.703 |
-| 1000025 | 20261110205614 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, 'class'` | 1 | 8.083 |
-| 1000026 | 20261110205614 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 6.242 |
-| 1000027 | 20261110205614 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 7.185 |
-| 1000028 | 20261110205614 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 6.018 |
-| 1000029 | 20261110205614 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 7.839 |
-| 1000030 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 16.583 |
-| 1000031 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.736 |
-| 1000032 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.742 |
-| 1000033 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 7.142 |
-| 1000034 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.9 |
-| 1000035 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.829 |
-| 1000036 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.743 |
-| 1000037 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.864 |
-| 1000038 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.658 |
-| 1000039 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.783 |
-| 1000040 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.696 |
-| 1000041 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.977 |
-| 1000042 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.563 |
-| 1000043 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.66 |
-| 1000044 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.926 |
-| 1000045 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.801 |
-| 1000046 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 7.499 |
-| 1000047 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.484 |
-| 1000048 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.893 |
-| 1000049 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.761 |
-| 1000050 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 7.164 |
-| 1000051 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.674 |
-| 1000052 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.475 |
-| 1000053 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 7.086 |
-| 1000054 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.671 |
-| 1000055 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.962 |
-| 1000056 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.714 |
-| 1000057 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.747 |
-| 1000058 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.814 |
-| 1000059 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.784 |
-| 1000060 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.523 |
-| 1000061 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.763 |
-| 1000062 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 7.38 |
-| 1000063 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.922 |
-| 1000064 | 20261110205614 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.673 |
-| 2000001 | 20261110205617 | `USE `sddctx`` | 0 | 0.707 |
-| 2000002 | 20261110205617 | `SELECT spec_id, title, module, status, body, keywords, related_code, related_tests, source_file, content_hash, revision FROM sdd_spec_item WHERE (title LIKE %s ` | 5 | 7.421 |
-| 2000003 | 20261110205617 | `INSERT INTO sdd_retrieval_log (task_id, query_text, target_kind, item_ref, score, sql_text, created_at) VALUES (%s, %s, %s, %s, %s, %s, NOW())` | 5 | 40.652 |
-| 2000004 | 20261110205617 | `SELECT file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash FROM sdd_code_symbol WHERE file_path IN (%s, %s, %s) OR ((` | 8 | 7.694 |
-| 2000005 | 20261110205617 | `INSERT INTO sdd_retrieval_log (task_id, query_text, target_kind, item_ref, score, sql_text, created_at) VALUES (%s, %s, %s, %s, %s, %s, NOW())` | 8 | 50.64 |
-| 2000006 | 20261110205617 | `SELECT node_id, file_path, test_name, purpose, markers, source_file, content_hash FROM sdd_test_case WHERE file_path IN (%s, %s, %s, %s) OR file_path IN (%s, %s` | 12 | 8.576 |
-| 2000007 | 20261110205617 | `INSERT INTO sdd_retrieval_log (task_id, query_text, target_kind, item_ref, score, sql_text, created_at) VALUES (%s, %s, %s, %s, %s, %s, NOW())` | 12 | 80.512 |
-| 2000008 | 20261110205617 | `INSERT INTO sdd_task (task_id, title, description, status, created_at, updated_at) VALUES (%s, %s, %s, 'in_progress', NOW(), NOW()) ON DUPLICATE KEY UPDATE titl` | 1 | 8.692 |
-| 2000009 | 20261110205617 | `SELECT VERSION()` | 1 | 1.257 |
-| 3000001 | 20261110205621 | `USE `sddctx`` | 0 | 0.576 |
-| 3000002 | 20261110205621 | `INSERT INTO sdd_verification (task_id, phase, command, exit_code, passed, failed, log_path, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())` | 1 | 16.623 |
-| 4000001 | 20261110205625 | `USE `sddctx`` | 0 | 0.787 |
-| 4000002 | 20261110205625 | `INSERT INTO sdd_verification (task_id, phase, command, exit_code, passed, failed, log_path, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())` | 1 | 17.586 |
-| 5000001 | 20261110205631 | `USE `sddctx`` | 0 | 0.857 |
-| 5000002 | 20261110205631 | `INSERT INTO sdd_verification (task_id, phase, command, exit_code, passed, failed, log_path, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())` | 1 | 15.738 |
-| 6000001 | 20261110205633 | `USE `sddctx`` | 0 | 0.706 |
-| 6000002 | 20261110205633 | `INSERT INTO sdd_task_progress (task_id, kind, content, origin, created_at) VALUES (%s, %s, %s, %s, NOW())` | 1 | 15.843 |
-| 6000003 | 20261110205633 | `INSERT INTO sdd_task_progress (task_id, kind, content, origin, created_at) VALUES (%s, %s, %s, %s, NOW())` | 1 | 7.451 |
-| 6000004 | 20261110205633 | `INSERT INTO sdd_task_progress (task_id, kind, content, origin, created_at) VALUES (%s, %s, %s, %s, NOW())` | 1 | 6.357 |
-| 6000005 | 20261110205633 | `INSERT INTO sdd_task_progress (task_id, kind, content, origin, created_at) VALUES (%s, %s, %s, %s, NOW())` | 1 | 7.018 |
-| 6000006 | 20261110205633 | `INSERT INTO sdd_task_progress (task_id, kind, content, origin, created_at) VALUES (%s, %s, %s, %s, NOW())` | 1 | 5.568 |
-| 6000007 | 20261110205633 | `INSERT INTO sdd_task_progress (task_id, kind, content, origin, created_at) VALUES (%s, %s, %s, %s, NOW())` | 1 | 7.062 |
-| 6000008 | 20261110205633 | `INSERT INTO sdd_task_progress (task_id, kind, content, origin, created_at) VALUES (%s, %s, %s, %s, NOW())` | 1 | 5.968 |
-| 7000001 | 20261110205636 | `USE `sddctx`` | 0 | 0.755 |
-| 8000001 | 20261110205638 | `USE `sddctx`` | 0 | 0.843 |
-| 9000001 | 20261110205640 | `USE `sddctx`` | 0 | 0.74 |
-| 9000002 | 20261110205640 | `SELECT spec_id, title, module, status, body, keywords, related_code, related_tests, source_file, content_hash, revision FROM sdd_spec_item WHERE (title LIKE %s ` | 5 | 7.225 |
-| 9000003 | 20261110205640 | `INSERT INTO sdd_retrieval_log (task_id, query_text, target_kind, item_ref, score, sql_text, created_at) VALUES (%s, %s, %s, %s, %s, %s, NOW())` | 5 | 42.789 |
-| 9000004 | 20261110205640 | `SELECT file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash FROM sdd_code_symbol WHERE file_path IN (%s, %s, %s) OR ((` | 8 | 11.472 |
-| 9000005 | 20261110205640 | `INSERT INTO sdd_retrieval_log (task_id, query_text, target_kind, item_ref, score, sql_text, created_at) VALUES (%s, %s, %s, %s, %s, %s, NOW())` | 8 | 55.178 |
-| 9000006 | 20261110205640 | `SELECT node_id, file_path, test_name, purpose, markers, source_file, content_hash FROM sdd_test_case WHERE file_path IN (%s, %s, %s, %s) OR file_path IN (%s, %s` | 12 | 8.043 |
-| 9000007 | 20261110205640 | `INSERT INTO sdd_retrieval_log (task_id, query_text, target_kind, item_ref, score, sql_text, created_at) VALUES (%s, %s, %s, %s, %s, %s, NOW())` | 12 | 82.752 |
-| 9000008 | 20261110205640 | `INSERT INTO sdd_task (task_id, title, description, status, created_at, updated_at) VALUES (%s, %s, %s, 'in_progress', NOW(), NOW()) ON DUPLICATE KEY UPDATE titl` | 2 | 10.006 |
-| 9000009 | 20261110205640 | `SELECT VERSION()` | 1 | 0.962 |
-| 10000001 | 20261110205642 | `USE `sddctx`` | 0 | 0.75 |
+| 1 | 20261110210210 | `SELECT VERSION()` | 1 | 0.703 |
+| 1000001 | 20261110210212 | `USE `sddctx`` | 0 | 0.613 |
+| 1000002 | 20261110210212 | `SELECT id, content_hash, revision FROM sdd_spec_item WHERE spec_id = %s` | 0 | 5.929 |
+| 1000003 | 20261110210212 | `INSERT INTO sdd_spec_item (spec_id, title, module, status, body, keywords, related_code, related_tests, source_file, content_hash, revision, updated_at) VALUES ` | 1 | 15.454 |
+| 1000004 | 20261110210212 | `SELECT id, content_hash, revision FROM sdd_spec_item WHERE spec_id = %s` | 0 | 0.554 |
+| 1000005 | 20261110210212 | `INSERT INTO sdd_spec_item (spec_id, title, module, status, body, keywords, related_code, related_tests, source_file, content_hash, revision, updated_at) VALUES ` | 1 | 6.968 |
+| 1000006 | 20261110210212 | `SELECT id, content_hash, revision FROM sdd_spec_item WHERE spec_id = %s` | 0 | 0.475 |
+| 1000007 | 20261110210212 | `INSERT INTO sdd_spec_item (spec_id, title, module, status, body, keywords, related_code, related_tests, source_file, content_hash, revision, updated_at) VALUES ` | 1 | 5.708 |
+| 1000008 | 20261110210212 | `SELECT id, content_hash, revision FROM sdd_spec_item WHERE spec_id = %s` | 0 | 0.704 |
+| 1000009 | 20261110210212 | `INSERT INTO sdd_spec_item (spec_id, title, module, status, body, keywords, related_code, related_tests, source_file, content_hash, revision, updated_at) VALUES ` | 1 | 6.791 |
+| 1000010 | 20261110210212 | `SELECT id, content_hash, revision FROM sdd_spec_item WHERE spec_id = %s` | 0 | 0.648 |
+| 1000011 | 20261110210212 | `INSERT INTO sdd_spec_item (spec_id, title, module, status, body, keywords, related_code, related_tests, source_file, content_hash, revision, updated_at) VALUES ` | 1 | 6.427 |
+| 1000012 | 20261110210212 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 21.386 |
+| 1000013 | 20261110210212 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 6.516 |
+| 1000014 | 20261110210212 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, 'class'` | 1 | 7.151 |
+| 1000015 | 20261110210212 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 6.74 |
+| 1000016 | 20261110210212 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, 'class'` | 1 | 5.546 |
+| 1000017 | 20261110210212 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 5.463 |
+| 1000018 | 20261110210212 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 6.068 |
+| 1000019 | 20261110210212 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, 'class'` | 1 | 5.907 |
+| 1000020 | 20261110210212 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 7.136 |
+| 1000021 | 20261110210212 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, 'class'` | 1 | 6.892 |
+| 1000022 | 20261110210212 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 5.796 |
+| 1000023 | 20261110210212 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 6.68 |
+| 1000024 | 20261110210212 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 6.996 |
+| 1000025 | 20261110210212 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, 'class'` | 1 | 6.945 |
+| 1000026 | 20261110210212 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 5.282 |
+| 1000027 | 20261110210212 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 5.355 |
+| 1000028 | 20261110210212 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 5.875 |
+| 1000029 | 20261110210212 | `INSERT INTO sdd_code_symbol (file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s,` | 1 | 5.406 |
+| 1000030 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 17.209 |
+| 1000031 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.96 |
+| 1000032 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.672 |
+| 1000033 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.781 |
+| 1000034 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 7.174 |
+| 1000035 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.612 |
+| 1000036 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 7.159 |
+| 1000037 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 7.061 |
+| 1000038 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.485 |
+| 1000039 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.658 |
+| 1000040 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 8.304 |
+| 1000041 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 7.115 |
+| 1000042 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.731 |
+| 1000043 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.982 |
+| 1000044 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.901 |
+| 1000045 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 7.078 |
+| 1000046 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 7.366 |
+| 1000047 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 7.158 |
+| 1000048 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.834 |
+| 1000049 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.832 |
+| 1000050 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 7.166 |
+| 1000051 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.822 |
+| 1000052 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.769 |
+| 1000053 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.693 |
+| 1000054 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.128 |
+| 1000055 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.751 |
+| 1000056 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.885 |
+| 1000057 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.609 |
+| 1000058 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.833 |
+| 1000059 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.359 |
+| 1000060 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.42 |
+| 1000061 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.324 |
+| 1000062 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.719 |
+| 1000063 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 5.597 |
+| 1000064 | 20261110210212 | `INSERT INTO sdd_test_case (node_id, file_path, test_name, purpose, markers, source_file, content_hash, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW()) ON` | 1 | 6.509 |
+| 2000001 | 20261110210215 | `USE `sddctx`` | 0 | 0.964 |
+| 2000002 | 20261110210215 | `SELECT spec_id, title, module, status, body, keywords, related_code, related_tests, source_file, content_hash, revision FROM sdd_spec_item WHERE (title LIKE %s ` | 5 | 6.699 |
+| 2000003 | 20261110210215 | `INSERT INTO sdd_retrieval_log (task_id, query_text, target_kind, item_ref, score, sql_text, created_at) VALUES (%s, %s, %s, %s, %s, %s, NOW())` | 5 | 40.773 |
+| 2000004 | 20261110210215 | `SELECT file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash FROM sdd_code_symbol WHERE file_path IN (%s, %s, %s) OR ((` | 8 | 8.741 |
+| 2000005 | 20261110210215 | `INSERT INTO sdd_retrieval_log (task_id, query_text, target_kind, item_ref, score, sql_text, created_at) VALUES (%s, %s, %s, %s, %s, %s, NOW())` | 8 | 51.399 |
+| 2000006 | 20261110210215 | `SELECT node_id, file_path, test_name, purpose, markers, source_file, content_hash FROM sdd_test_case WHERE file_path IN (%s, %s, %s, %s) OR file_path IN (%s, %s` | 12 | 5.862 |
+| 2000007 | 20261110210215 | `INSERT INTO sdd_retrieval_log (task_id, query_text, target_kind, item_ref, score, sql_text, created_at) VALUES (%s, %s, %s, %s, %s, %s, NOW())` | 12 | 86.788 |
+| 2000008 | 20261110210215 | `INSERT INTO sdd_task (task_id, title, description, status, created_at, updated_at) VALUES (%s, %s, %s, 'in_progress', NOW(), NOW()) ON DUPLICATE KEY UPDATE titl` | 1 | 7.757 |
+| 2000009 | 20261110210215 | `SELECT VERSION()` | 1 | 0.928 |
+| 3000001 | 20261110210219 | `USE `sddctx`` | 0 | 0.835 |
+| 3000002 | 20261110210219 | `INSERT INTO sdd_verification (task_id, phase, command, exit_code, passed, failed, log_path, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())` | 1 | 17.695 |
+| 4000001 | 20261110210224 | `USE `sddctx`` | 0 | 0.987 |
+| 4000002 | 20261110210224 | `INSERT INTO sdd_verification (task_id, phase, command, exit_code, passed, failed, log_path, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())` | 1 | 16.722 |
+| 5000001 | 20261110210230 | `USE `sddctx`` | 0 | 0.882 |
+| 5000002 | 20261110210230 | `INSERT INTO sdd_verification (task_id, phase, command, exit_code, passed, failed, log_path, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())` | 1 | 14.466 |
+| 6000001 | 20261110210232 | `USE `sddctx`` | 0 | 1.236 |
+| 6000002 | 20261110210232 | `SELECT kind, content FROM sdd_task_progress WHERE task_id = %s` | 0 | 5.179 |
+| 6000003 | 20261110210232 | `INSERT INTO sdd_task_progress (task_id, kind, content, origin, created_at) VALUES (%s, %s, %s, %s, NOW())` | 1 | 13.582 |
+| 6000004 | 20261110210232 | `INSERT INTO sdd_task_progress (task_id, kind, content, origin, created_at) VALUES (%s, %s, %s, %s, NOW())` | 1 | 6.898 |
+| 6000005 | 20261110210232 | `INSERT INTO sdd_task_progress (task_id, kind, content, origin, created_at) VALUES (%s, %s, %s, %s, NOW())` | 1 | 6.571 |
+| 6000006 | 20261110210232 | `INSERT INTO sdd_task_progress (task_id, kind, content, origin, created_at) VALUES (%s, %s, %s, %s, NOW())` | 1 | 7.927 |
+| 6000007 | 20261110210232 | `INSERT INTO sdd_task_progress (task_id, kind, content, origin, created_at) VALUES (%s, %s, %s, %s, NOW())` | 1 | 7.31 |
+| 6000008 | 20261110210232 | `INSERT INTO sdd_task_progress (task_id, kind, content, origin, created_at) VALUES (%s, %s, %s, %s, NOW())` | 1 | 8.015 |
+| 6000009 | 20261110210232 | `INSERT INTO sdd_task_progress (task_id, kind, content, origin, created_at) VALUES (%s, %s, %s, %s, NOW())` | 1 | 6.238 |
+| 7000001 | 20261110210235 | `USE `sddctx`` | 0 | 0.814 |
+| 8000001 | 20261110210237 | `USE `sddctx`` | 0 | 0.693 |
+| 9000001 | 20261110210239 | `USE `sddctx`` | 0 | 0.9 |
+| 9000002 | 20261110210239 | `SELECT spec_id, title, module, status, body, keywords, related_code, related_tests, source_file, content_hash, revision FROM sdd_spec_item WHERE (title LIKE %s ` | 5 | 8.174 |
+| 9000003 | 20261110210239 | `INSERT INTO sdd_retrieval_log (task_id, query_text, target_kind, item_ref, score, sql_text, created_at) VALUES (%s, %s, %s, %s, %s, %s, NOW())` | 5 | 61.115 |
+| 9000004 | 20261110210239 | `SELECT file_path, symbol, kind, signature, docstring, line_start, line_end, source_file, content_hash FROM sdd_code_symbol WHERE file_path IN (%s, %s, %s) OR ((` | 8 | 8.227 |
+| 9000005 | 20261110210239 | `INSERT INTO sdd_retrieval_log (task_id, query_text, target_kind, item_ref, score, sql_text, created_at) VALUES (%s, %s, %s, %s, %s, %s, NOW())` | 8 | 46.707 |
+| 9000006 | 20261110210239 | `SELECT node_id, file_path, test_name, purpose, markers, source_file, content_hash FROM sdd_test_case WHERE file_path IN (%s, %s, %s, %s) OR file_path IN (%s, %s` | 12 | 6.636 |
+| 9000007 | 20261110210239 | `INSERT INTO sdd_retrieval_log (task_id, query_text, target_kind, item_ref, score, sql_text, created_at) VALUES (%s, %s, %s, %s, %s, %s, NOW())` | 12 | 82.043 |
+| 9000008 | 20261110210239 | `INSERT INTO sdd_task (task_id, title, description, status, created_at, updated_at) VALUES (%s, %s, %s, 'in_progress', NOW(), NOW()) ON DUPLICATE KEY UPDATE titl` | 2 | 8.936 |
+| 9000009 | 20261110210239 | `SELECT VERSION()` | 1 | 0.752 |
+| 10000001 | 20261110210241 | `USE `sddctx`` | 0 | 0.698 |
 
 ## 二、上下文召回记录
 
