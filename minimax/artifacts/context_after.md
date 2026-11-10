@@ -1,0 +1,219 @@
+# 开发任务：为订单查询增加金额区间筛选
+
+- 任务 ID：TASK-ORD-003
+- 任务描述：在订单筛选函数 filter_orders 上新增 min_amount / max_amount 闭区间金额筛选，金额使用 Decimal 精确比较；必须保持既有状态筛选、排序与分页行为不变，并让新增的目标功能测试通过。
+- 上下文来源数据库：embedded seekdb (data dir: /root/.sddctx/seekdb)（5.7.25-OceanBase seekdb-v1.4.0.0）
+
+## 一、本次任务适用的规格
+
+### SPEC-ORD-003 订单金额区间筛选
+- 来源文件：`sample_project/specs/SPEC-ORD-003-订单金额区间筛选.md`（第 1 版，状态：生效）
+- 关联代码：`src/order_fulfillment/filters.py::filter_orders`
+- 关联测试：`tests/test_feature_amount_filter.py`
+- 命中原因：关键词命中：filter_orders、max_amount、min_amount、Decimal、与分、使用；规格状态：生效；规格声明的关联代码：src/order_fulfillment/filters.py::filter_orders；规格声明的关联测试：tests/test_feature_amount_filter.py
+
+```text
+# SPEC-ORD-003 订单金额区间筛选
+
+- 规格 ID：SPEC-ORD-003
+- 状态：生效
+- 所属模块：order_fulfillment.filters
+- 关联代码：src/order_fulfillment/filters.py::filter_orders
+- 关联测试：tests/test_feature_amount_filter.py
+- 关键词：金额筛选, min_amount, max_amount, 区间, 闭区间, ValueError
+
+## 需求
+
+`filter_orders` 必须支持按订单金额区间筛选订单。筛选条件通过关键字参数 `min_amount` 与 `max_amount`
+传入，二者共同构成一个**闭区间** `[min_amount, max_amount]`。
+
+## 验收标准
+
+1. `min_amount` 与 `max_amount` 均为 `None` 时，金额维度不做任何过滤，行为与既有版本完全一致。
+2. 只传 `min_amount` 时，返回所有 `amount >= min_amount` 的订单；只传 `max_amount` 时，返回所有
+   `amount <= max_amount` 的订单。
+3. 同时传入两个参数时，返回 `min_amount <= amount <= max_amount` 的订单（闭区间，两端都包含）。
+4. `min_amount > max_amount` 属于参数错误，必须抛出 `ValueError`，且错误信息中包含 `min_amount` 与
+   `max_amount` 两个参数名。
+5. `min_amount` / `max_amount` 只接受 `decimal.Decimal` 或 `int` 取值；字符串、浮点数、布尔值等
+   其它类型必须抛出 `ValueError`（浮点数被显式拒绝，因为二进制浮点无法保证边界精度）。
+   `None` 表示该侧不设边界，不是非法取值。
+6. 金额比较必须使用精确小数运算（`decimal.Decimal`），禁止使用二进制浮点数直接比较，
+   以免 `0.1 + 0.2` 类误差导致边界订单被错误排除。
+7. 边界金额（例如恰好等于 `min_amount` 或 `max_amount`）的订单必须被保留。
+
+## 不在范围内
+
+- 不改变 `status` 筛选、`sort_by` 排序与分页的既有语义。
+- 不改变 `Order` 数据模型与 CSV 数据文件结构。
+```
+
+### SPEC-ORD-001 订单查询与排序
+- 来源文件：`sample_project/specs/SPEC-ORD-001-订单查询与排序.md`（第 1 版，状态：生效）
+- 关联代码：`src/order_fulfillment/filters.py::filter_orders`
+- 关联测试：`tests/test_filters.py`
+- 命中原因：关键词命中：filter_orders、与分、使用、分页；规格状态：生效；规格声明的关联代码：src/order_fulfillment/filters.py::filter_orders；规格声明的关联测试：tests/test_filters.py
+
+```text
+# SPEC-ORD-001 订单查询与排序
+
+- 规格 ID：SPEC-ORD-001
+- 状态：生效
+- 所属模块：order_fulfillment.filters
+- 关联代码：src/order_fulfillment/filters.py::filter_orders
+- 关联测试：tests/test_filters.py
+- 关键词：排序, sort_by, created_at, amount, 分页
+
+## 需求
+
+`filter_orders` 在完成筛选后必须按指定字段排序，并支持分页。
+
+## 验收标准
+
+1. `sort_by` 支持 `created_at`（默认）、`amount`、`order_id`。
+2. 排序方向为升序；金额排序使用精确小数比较。
+3. `offset` 与 `limit` 为 `None` 时返回全部结果；`limit <= 0` 时抛出 `ValueError`。
+4. 任何新增筛选条件都不得改变上述排序与分页语义。
+
+## 不在范围内
+
+- 不支持降序排序参数。
+```
+
+### SPEC-API-001 订单查询 HTTP 接口契约
+- 来源文件：`sample_project/specs/SPEC-API-001-查询接口契约.md`（第 1 版，状态：生效）
+- 关联代码：`src/order_fulfillment/service.py::OrderQueryHandler`
+- 关联测试：`tests/test_service_api.py`
+- 命中原因：关键词命中：filter_orders、max_amount、min_amount；规格状态：生效；规格声明的关联代码：src/order_fulfillment/service.py::OrderQueryHandler；规格声明的关联测试：tests/test_service_api.py
+
+```text
+# SPEC-API-001 订单查询 HTTP 接口契约
+
+- 规格 ID：SPEC-API-001
+- 状态：生效
+- 所属模块：order_fulfillment.service
+- 关联代码：src/order_fulfillment/service.py::OrderQueryHandler
+- 关联测试：tests/test_service_api.py
+- 关键词：HTTP, 查询接口, /orders, 查询参数
+
+## 需求
+
+订单查询服务对外提供 `GET /orders` 接口，返回 JSON 格式的订单列表。
+
+## 验收标准
+
+1. `GET /orders` 返回 `200`，响应体为 `{"orders": [...], "total": <int>}`。
+2. 支持的查询参数：`status`、`min_amount`、`max_amount`、`sort_by`、`offset`、`limit`。
+3. `min_amount` / `max_amount` 与 `filter_orders` 语义一致，非法取值返回 `400` 并给出错误信息。
+4. 接口响应中的 `amount` 字段保留两位小数字符串表示。
+
+## 不在范围内
+
+- 不提供写操作接口。
+```
+
+### SPEC-PRC-001 阶梯折扣计算
+- 来源文件：`sample_project/specs/SPEC-PRC-001-折扣计算.md`（第 1 版，状态：生效）
+- 关联代码：`src/order_fulfillment/pricing.py::discount_rate`
+- 关联测试：`tests/test_pricing.py`
+- 命中原因：关键词命中：Decimal、使用；规格状态：生效；规格声明的关联代码：src/order_fulfillment/pricing.py::discount_rate；规格声明的关联测试：tests/test_pricing.py
+
+```text
+# SPEC-PRC-001 阶梯折扣计算
+
+- 规格 ID：SPEC-PRC-001
+- 状态：生效
+- 所属模块：order_fulfillment.pricing
+- 关联代码：src/order_fulfillment/pricing.py::discount_rate
+- 关联测试：tests/test_pricing.py
+- 关键词：折扣, 阶梯, discount_rate
+
+## 需求
+
+根据订单金额计算阶梯折扣率，折扣率以 `Decimal` 返回。
+
+## 验收标准
+
+1. 金额低于 100 元时折扣率为 `Decimal("1.00")`。
+2. 金额大于等于 100 元且低于 500 元时折扣率为 `Decimal("0.95")`。
+3. 金额大于等于 500 元时折扣率为 `Decimal("0.90")`。
+4. 计算过程使用 `Decimal`，不接受二进制浮点入参。
+
+## 不在范围内
+
+- 不做优惠券叠加计算。
+```
+
+### SPEC-ORD-002 订单状态筛选
+- 来源文件：`sample_project/specs/SPEC-ORD-002-订单状态筛选.md`（第 1 版，状态：生效）
+- 关联代码：`src/order_fulfillment/filters.py::filter_orders`
+- 关联测试：`tests/test_filters.py`
+- 命中原因：关键词命中：filter_orders；规格状态：生效；规格声明的关联代码：src/order_fulfillment/filters.py::filter_orders；规格声明的关联测试：tests/test_filters.py
+
+```text
+# SPEC-ORD-002 订单状态筛选
+
+- 规格 ID：SPEC-ORD-002
+- 状态：生效
+- 所属模块：order_fulfillment.filters
+- 关联代码：src/order_fulfillment/filters.py::filter_orders
+- 关联测试：tests/test_filters.py
+- 关键词：状态筛选, status, 待发货, 已发货
+
+## 需求
+
+`filter_orders` 必须支持按订单状态筛选，状态取值来自 `OrderStatus` 枚举。
+
+## 验收标准
+
+1. `status=None` 表示不过滤状态。
+2. 传入 `OrderStatus` 时只返回该状态的订单。
+3. 传入非法状态字符串时抛出 `ValueError`，错误信息包含原始取值。
+4. 状态筛选与其它筛选条件同时存在时，结果为各条件交集。
+
+## 不在范围内
+
+- 不做状态流转，仅做筛选。
+```
+
+## 二、需要修改的代码文件与符号
+- `src/order_fulfillment/filters.py` :: `filter_orders`（function，L27-L75） — 被生效规格声明为关联代码；符号命中关键词：filter_orders、分页
+  - 签名：`def filter_orders(orders: Iterable[Order], *, status: Optional[object]=None, sort_by: str='created_at', offset: Optional[int]=None, limit: Optional[int]=None) -> list[Order]:`
+- `src/order_fulfillment/pricing.py` :: `discount_rate`（function，L13-L24） — 被生效规格声明为关联代码；符号命中关键词：Decimal
+  - 签名：`def discount_rate(amount: Decimal) -> Decimal:`
+- `src/order_fulfillment/filters.py` :: `_sort_value`（function，L17-L24） — 被生效规格声明为关联代码
+  - 签名：`def _sort_value(order: Order, sort_by: str):`
+- `src/order_fulfillment/service.py` :: `OrderQueryHandler`（class，L18-L60） — 被生效规格声明为关联代码
+  - 签名：`class OrderQueryHandler:`
+- `src/order_fulfillment/service.py` :: `_send_json`（method，L54-L60） — 被生效规格声明为关联代码
+  - 签名：`def _send_json(self, status: int, payload: dict) -> None:`
+- `src/order_fulfillment/service.py` :: `create_server`（function，L63-L67） — 被生效规格声明为关联代码
+  - 签名：`def create_server(repository: OrderRepository, host: str='127.0.0.1', port: int=8080) -> ThreadingHTTPServer:`
+- `src/order_fulfillment/service.py` :: `do_GET`（method，L24-L49） — 被生效规格声明为关联代码
+  - 签名：`def do_GET(self) -> None:`
+- `src/order_fulfillment/service.py` :: `log_message`（method，L51-L52） — 被生效规格声明为关联代码
+  - 签名：`def log_message(self, fmt: str, *args) -> None:`
+
+## 三、用于验证功能与兼容性的测试
+- `tests/test_feature_amount_filter.py::test_amount_comparison_uses_exact_decimal_arithmetic` — 验收标准 6：使用 Decimal 精确比较，0.1 + 0.2 类误差不得影响边界判断。 — 被生效规格声明为关联测试；用例命中关键词：Decimal、使用
+- `tests/test_feature_amount_filter.py::test_min_amount_greater_than_max_amount_is_rejected` — 验收标准 4：区间颠倒必须抛出 ValueError，错误信息包含两个参数名。 — 被生效规格声明为关联测试；用例命中关键词：max_amount、min_amount
+- `tests/test_feature_amount_filter.py::test_max_amount_keeps_orders_on_or_below_the_boundary` — 验收标准 2、7：只传 max_amount 时保留 amount <= max_amount 的订单。 — 被生效规格声明为关联测试；用例命中关键词：max_amount
+- `tests/test_feature_amount_filter.py::test_min_amount_keeps_orders_on_or_above_the_boundary` — 验收标准 2、7：只传 min_amount 时保留 amount >= min_amount 的订单。 — 被生效规格声明为关联测试；用例命中关键词：min_amount
+- `tests/test_feature_amount_filter.py::test_non_numeric_amount_is_rejected` — 验收标准 5：非 Decimal/整数的金额取值必须抛出 ValueError。 — 被生效规格声明为关联测试；用例命中关键词：Decimal
+- `tests/test_feature_amount_filter.py::test_orders_endpoint_supports_min_amount_query` — SPEC-API-001：查询接口接受 min_amount 并返回筛选后的结果。 — 被生效规格声明为关联测试；用例命中关键词：min_amount
+- `tests/test_feature_amount_filter.py::test_amount_filter_combines_with_status_filter` — 金额筛选与状态筛选同时存在时取交集，不改变原有筛选语义。 — 被生效规格声明为关联测试
+- `tests/test_feature_amount_filter.py::test_amount_range_is_inclusive_on_both_ends` — 验收标准 3：同时传入时为闭区间，两端订单都要保留。 — 被生效规格声明为关联测试
+- `tests/test_feature_amount_filter.py::test_no_amount_filter_returns_every_order` — 验收标准 1：不传金额条件时行为与既有版本一致。 — 被生效规格声明为关联测试
+- `tests/test_feature_amount_filter.py::test_orders_endpoint_rejects_invalid_amount_query` — SPEC-API-001：非法金额参数必须返回 400，而不是静默忽略。 — 被生效规格声明为关联测试
+- `tests/test_filters.py::test_filters_by_status_instance` — （无说明） — 被生效规格声明为关联测试
+- `tests/test_filters.py::test_filters_by_status_string` — （无说明） — 被生效规格声明为关联测试
+
+## 四、已完成事项、待办事项与已有验证结果
+- 状态来源：powercontext:scp_4zzjwe6r0f22fb9yywq0390ykf
+- [已完成] 由 MiniMax 生成补丁并应用到 filter_orders 与 HTTP 查询接口
+- [已完成] 在 seekdb 中建立规格/代码/测试索引并完成三路召回
+- [已完成] 导入 5 条规格到 seekdb（规格 / 代码符号 / 测试用例）
+- [已完成] 完成 为订单查询增加金额区间筛选
+- [待办] 为金额区间筛选补充边界用例
+- [验证] after python -m pytest -q tests → 退出码 0, 通过 37, 失败 0
+- [备注] 上下文选择方式：规格声明的关联代码/关联测试优先，关键词命中作为补充

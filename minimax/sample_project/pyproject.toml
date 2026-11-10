@@ -1,0 +1,9 @@
+[project]
+name = "order-fulfillment-service"
+version = "0.3.0"
+description = "订单履约服务（SDD 上下文管理演示业务工程）"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

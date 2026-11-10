@@ -1,0 +1,7 @@
+# 统一以 LF 存储与检出，避免 Windows 检出破坏 Shell 脚本
+* text=auto eol=lf
+
+# Windows 专用脚本保持 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf

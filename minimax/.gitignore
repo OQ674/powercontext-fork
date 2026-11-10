@@ -1,0 +1,5 @@
+# 本地运行状态（嵌入式 seekdb / PowerContext），不纳入版本管理
+.sddctx/
+__pycache__/
+*.pyc
+.pytest_cache/

@@ -1,0 +1,7 @@
+# command: /root/venvs/seeklit/bin/python -m pytest -q tests
+# cwd: /mnt/d/文件/文档/Oceanbase大赛/速成/minimax/powercontext/minimax/sample_project
+# started_at: 2026-11-10T20:56:31
+# exit_code: 0
+------------------------------------------------------------------------
+.....................................                                    [100%]
+37 passed in 3.87s
